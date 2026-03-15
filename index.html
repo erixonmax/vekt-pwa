@@ -1739,6 +1739,29 @@ function logout() {
   location.reload();
 }
 
+// ── Force project navigation fix ────────────────────────────────────────────
+// Override openProject to ensure it works regardless of cache state
+window._openProjectOriginal = window.openProject;
+window.openProject = function(projId) {
+  const proj = (_data[SK.PROJECTS] || []).find(p => String(p.id) === String(projId));
+  if (!proj) return;
+  _currentProj  = projId;
+  _stageFilter  = '';
+  const listView   = document.getElementById('projListView');
+  const detailView = document.getElementById('projDetailView');
+  const nameEl     = document.getElementById('detailProjName');
+  const headerEl   = document.getElementById('headerTitle');
+  if (listView)   listView.style.display   = 'none';
+  if (detailView) detailView.style.display = 'flex';
+  if (nameEl)     nameEl.textContent = proj.name || proj.client || 'Project';
+  if (headerEl)   headerEl.textContent = proj.name || proj.client || 'Project';
+  // Ensure tab screen is active
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const tabEl = document.getElementById('tabProjects');
+  if (tabEl) tabEl.classList.add('active');
+  renderProjectDetail();
+};
+
 // ── Mobile keyboard handling ─────────────────────────────────────────────────
 // When keyboard opens on mobile, scroll focused input into view
 if (window.visualViewport) {
