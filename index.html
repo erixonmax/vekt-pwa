@@ -240,7 +240,10 @@ input,textarea{font-family:inherit}
 <!-- Loading overlay -->
 <div id="loadingOverlay">
   <div style="width:52px;height:52px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:4px">
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <svg viewBox="0 0 100 100" width="32" height="32" fill="none">
+      <circle cx="50" cy="30" r="18" fill="white"/>
+      <path d="M20 75 Q50 95 80 75 L65 55 Q50 65 35 55 Z" fill="white"/>
+    </svg>
   </div>
   <div class="spinner"></div>
   <div class="loading-text">Loading vekt…</div>
@@ -264,7 +267,10 @@ input,textarea{font-family:inherit}
   <div class="screen active" id="loginScreen">
     <div style="flex:1;overflow-y:auto;padding:32px 24px">
       <div class="login-logo">
-        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <svg viewBox="0 0 100 100" width="36" height="36" fill="none">
+          <circle cx="50" cy="30" r="18" fill="white"/>
+          <path d="M20 75 Q50 95 80 75 L65 55 Q50 65 35 55 Z" fill="white"/>
+        </svg>
       </div>
       <div class="login-title">vekt</div>
       <div class="login-sub">Project tracking for small teams</div>
@@ -524,7 +530,7 @@ input,textarea{font-family:inherit}
     </div>
     <div class="scroll" id="taskDetailBody" style="flex:1"></div>
     <div class="comment-input-wrap" id="commentInputWrap">
-      <textarea class="comment-input" id="commentInput" placeholder="Add a comment…" rows="1" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendComment()}"></textarea>
+      <textarea class="comment-input" id="commentInput" placeholder="Add a comment…" rows="1" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendComment()}" onfocus="setTimeout(()=>this.scrollIntoView({behavior:'smooth',block:'center'}),300)"></textarea>
       <button class="comment-send" onclick="sendComment()">
         <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
@@ -1185,6 +1191,11 @@ function openProject(projId) {
   document.getElementById('projListView').style.display   = 'none';
   document.getElementById('projDetailView').style.display = 'flex';
   document.getElementById('detailProjName').textContent = proj.name || proj.client || 'Project';
+  // Update header title
+  document.getElementById('headerTitle').textContent = proj.name || proj.client || 'Project';
+  // Ensure tab is active
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('tabProjects').classList.add('active');
   renderProjectDetail();
 }
 
@@ -1192,6 +1203,7 @@ function showProjList() {
   _currentProj = null;
   document.getElementById('projListView').style.display   = 'flex';
   document.getElementById('projDetailView').style.display = 'none';
+  document.getElementById('headerTitle').textContent = 'Projects';
   document.getElementById('fab').classList.add('visible');
 }
 
@@ -1725,6 +1737,17 @@ function logout() {
   _client = null; _activeUser = null; _data = {};
   if (_realtime) { try { _realtime.unsubscribe(); } catch {} _realtime = null; }
   location.reload();
+}
+
+// ── Mobile keyboard handling ─────────────────────────────────────────────────
+// When keyboard opens on mobile, scroll focused input into view
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const focused = document.activeElement;
+    if (focused && (focused.tagName === 'TEXTAREA' || focused.tagName === 'INPUT')) {
+      setTimeout(() => focused.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    }
+  });
 }
 
 // ═══════════════════════ INIT ════════════════════════════════════════════
