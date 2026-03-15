@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="vekt">
+<meta name="theme-color" content="#0071e3">
+<title>vekt</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<style>
+/* ── Reset & Base ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --accent:#0071e3;--accent-hover:#005bb5;--accent-light:#e8f0fe;
+  --text:#1d1d1f;--muted:#6e6e73;--muted2:#aeaeb2;
+  --bg:#f5f5f7;--white:#ffffff;
+  --border:#d2d2d7;--border-light:#e5e5ea;
+  --red:#ff3b30;--red-light:#fff0ef;
+  --green:#34c759;--green-dark:#248a3d;--green-light:#f0fff4;
+  --orange:#f59e0b;--orange-light:#fffbeb;
+  --radius:12px;--radius-sm:8px;--radius-xs:6px;--radius-pill:999px;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);--shadow-lg:0 8px 32px rgba(0,0,0,0.14);
+  --font-xs:11px;--font-sm:13px;--font-base:15px;--font-md:17px;--font-lg:20px;--font-xl:24px;
+  --nav-h:60px;--header-h:52px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:var(--font-base)}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit}
+
+/* ── Layout shells ────────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100%;padding-top:var(--safe-top)}
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden}
+.screen.active{display:flex}
+
+/* ── Header ───────────────────────────────────────────────────────── */
+.header{height:var(--header-h);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;position:relative}
+.header-title{font-size:var(--font-md);font-weight:700;color:var(--text);flex:1}
+.header-sub{font-size:var(--font-xs);color:var(--muted);margin-top:1px}
+.header-back{background:none;border:none;color:var(--accent);font-size:var(--font-base);font-weight:600;padding:8px 0;display:flex;align-items:center;gap:4px}
+.header-action{background:none;border:none;color:var(--accent);font-size:var(--font-sm);font-weight:600;padding:8px 0}
+
+/* ── Bottom nav ───────────────────────────────────────────────────── */
+#bottomNav{height:calc(var(--nav-h) + var(--safe-bot));padding-bottom:var(--safe-bot);background:var(--white);border-top:1px solid var(--border);display:none;flex-shrink:0}
+.nav-inner{height:var(--nav-h);display:flex;align-items:stretch}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--muted2);font-size:9px;font-weight:600;letter-spacing:0.3px;position:relative;transition:color 0.15s}
+.nav-btn.active{color:var(--accent)}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-dot{position:absolute;top:8px;right:calc(50% - 14px);width:7px;height:7px;border-radius:50%;background:var(--red);display:none}
+
+/* ── Scroll content ───────────────────────────────────────────────── */
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(8px + var(--safe-bot))}
+.scroll-no-pad{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+/* ── Cards ────────────────────────────────────────────────────────── */
+.card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-sm{background:var(--white);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.section-label{font-size:var(--font-xs);font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px;margin-top:4px}
+
+/* ── Task cards ───────────────────────────────────────────────────── */
+.task-card{background:var(--white);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:flex-start;gap:10px;position:relative}
+.task-card.done-card{opacity:0.5}
+.task-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;background:var(--white)}
+.task-check.checked{background:var(--green);border-color:var(--green)}
+.task-check svg{display:none;width:12px;height:12px;stroke:#fff;stroke-width:2.5}
+.task-check.checked svg{display:block}
+.task-body{flex:1;min-width:0}
+.task-name{font-size:var(--font-sm);font-weight:600;color:var(--text);line-height:1.4;word-break:break-word}
+.task-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;align-items:center}
+.task-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:var(--radius-pill);white-space:nowrap}
+.badge-overdue{background:var(--red-light);color:var(--red)}
+.badge-today{background:#fff7ed;color:#c2410c}
+.badge-soon{background:var(--accent-light);color:var(--accent)}
+.badge-project{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.badge-person{background:#f3e8ff;color:#7c3aed}
+.badge-stage{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.task-actions{display:flex;gap:6px;margin-top:8px}
+.task-btn{font-size:var(--font-xs);font-weight:600;padding:5px 12px;border-radius:var(--radius-pill);border:1.5px solid var(--border);background:none;color:var(--muted);display:flex;align-items:center;gap:4px}
+.task-btn.primary{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.task-btn.done-btn{border-color:var(--green);color:var(--green-dark);background:var(--green-light)}
+
+/* ── Login screen ─────────────────────────────────────────────────── */
+#loginScreen{background:var(--white);justify-content:center;padding:32px 24px;gap:0}
+.login-logo{width:64px;height:64px;background:var(--accent);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.login-logo svg{width:36px;height:36px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.login-title{font-size:var(--font-xl);font-weight:700;text-align:center;margin-bottom:4px}
+.login-sub{font-size:var(--font-sm);color:var(--muted);text-align:center;margin-bottom:32px}
+.field-label{font-size:var(--font-xs);font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.field-input{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:var(--font-base);outline:none;background:var(--bg);color:var(--text);transition:border-color 0.15s;-webkit-appearance:none}
+.field-input:focus{border-color:var(--accent);background:var(--white)}
+.field-wrap{margin-bottom:20px}
+.btn-full{width:100%;padding:14px;border-radius:var(--radius-sm);border:none;font-size:var(--font-base);font-weight:700;cursor:pointer;transition:all 0.15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:active{background:var(--accent-hover)}
+.btn-secondary{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
+.error-msg{font-size:var(--font-sm);color:var(--red);text-align:center;margin-top:12px;min-height:20px}
+
+/* ── User grid ────────────────────────────────────────────────────── */
+.user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;margin-bottom:20px}
+.user-tile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg);cursor:pointer;transition:all 0.15s}
+.user-tile.selected{border-color:var(--accent);background:var(--accent-light)}
+.user-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--font-md);color:#fff}
+.user-tile-name{font-size:10px;font-weight:600;color:var(--text);text-align:center;word-break:break-word;line-height:1.3}
+.pin-dots{display:flex;gap:10px;justify-content:center;margin:16px 0}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:var(--border);transition:background 0.15s}
+.pin-dot.filled{background:var(--accent)}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:280px;margin:0 auto}
+.pin-key{padding:16px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--white);font-size:var(--font-lg);font-weight:600;text-align:center;cursor:pointer;transition:all 0.1s;color:var(--text)}
+.pin-key:active{background:var(--accent-light);border-color:var(--accent)}
+.pin-key.del{font-size:var(--font-sm);color:var(--muted)}
+
+/* ── Today screen ─────────────────────────────────────────────────── */
+.today-greeting{font-size:var(--font-lg);font-weight:700;margin-bottom:2px}
+.today-date{font-size:var(--font-sm);color:var(--muted);margin-bottom:20px}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.stat-card{background:var(--white);border-radius:var(--radius-sm);padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.stat-num{font-size:var(--font-xl);font-weight:700;line-height:1}
+.stat-lbl{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+
+/* ── Empty states ─────────────────────────────────────────────────── */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty svg{width:40px;height:40px;stroke:var(--muted2);fill:none;stroke-width:1.5;margin-bottom:10px}
+.empty-title{font-size:var(--font-md);font-weight:600;color:var(--muted);margin-bottom:4px}
+.empty-sub{font-size:var(--font-sm);color:var(--muted2)}
+
+/* ── Project list ─────────────────────────────────────────────────── */
+.proj-card{background:var(--white);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:center;gap:12px;cursor:pointer}
+.proj-card:active{background:var(--bg)}
+.proj-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.proj-info{flex:1;min-width:0}
+.proj-name{font-size:var(--font-sm);font-weight:700;color:var(--text);word-break:break-word}
+.proj-meta{font-size:var(--font-xs);color:var(--muted);margin-top:2px}
+.proj-chevron{color:var(--muted2)}
+
+/* ── Stage pills ──────────────────────────────────────────────────── */
+.stage-filter{display:flex;gap:6px;overflow-x:auto;padding:0 16px 12px;-webkit-overflow-scrolling:touch;flex-shrink:0}
+.stage-filter::-webkit-scrollbar{display:none}
+.stage-pill{padding:6px 14px;border-radius:var(--radius-pill);border:1.5px solid var(--border);background:var(--white);font-size:var(--font-xs);font-weight:600;white-space:nowrap;cursor:pointer;transition:all 0.15s;color:var(--muted)}
+.stage-pill.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* ── Tracker entries ──────────────────────────────────────────────── */
+.entry-card{background:var(--white);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.entry-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+.entry-name{font-size:var(--font-sm);font-weight:600;color:var(--text);flex:1;word-break:break-word}
+.entry-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill)}
+.status-done{background:var(--green-light);color:var(--green-dark)}
+.status-revised{background:#fff7ed;color:#c2410c}
+.status-revision-done{background:var(--accent-light);color:var(--accent)}
+.entry-meta{font-size:var(--font-xs);color:var(--muted);display:flex;flex-wrap:wrap;gap:6px}
+.entry-child{margin-left:20px;border-left:2px solid var(--border);padding-left:10px;margin-top:6px}
+
+/* ── Notes ────────────────────────────────────────────────────────── */
+.note-card{background:var(--white);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border-left:3px solid transparent}
+.note-card.nt-reminder{border-left-color:#f59e0b}
+.note-card.nt-urgent{border-left-color:var(--red)}
+.note-card.nt-idea{border-left-color:#8b5cf6}
+.note-card.nt-note{border-left-color:var(--accent)}
+.note-title{font-size:var(--font-sm);font-weight:700;color:var(--text);margin-bottom:4px}
+.note-body{font-size:var(--font-sm);color:var(--muted);line-height:1.5;word-break:break-word}
+.note-due{font-size:var(--font-xs);color:var(--muted2);margin-top:5px;display:flex;align-items:center;gap:4px}
+.note-due.overdue{color:var(--red)}
+
+/* ── Comment thread ───────────────────────────────────────────────── */
+.comment{padding:10px 0;border-bottom:1px solid var(--border-light);display:flex;gap:10px}
+.comment:last-child{border-bottom:none}
+.comment-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;margin-top:1px}
+.comment-body{flex:1;min-width:0}
+.comment-author{font-size:var(--font-xs);font-weight:700;color:var(--text)}
+.comment-text{font-size:var(--font-sm);color:var(--text);line-height:1.5;word-break:break-word;margin-top:2px}
+.comment-time{font-size:10px;color:var(--muted2);margin-top:3px}
+.comment-input-wrap{padding:12px 16px;background:var(--white);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;padding-bottom:calc(12px + var(--safe-bot))}
+.comment-input{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-pill);font-size:var(--font-sm);outline:none;background:var(--bg);resize:none;max-height:100px;line-height:1.4}
+.comment-input:focus{border-color:var(--accent);background:var(--white)}
+.comment-send{width:38px;height:38px;border-radius:50%;background:var(--accent);border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.comment-send svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── Add task / note modal ────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.5);display:none;align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:var(--white);border-radius:16px 16px 0 0;width:100%;padding:20px 20px calc(20px + var(--safe-bot));max-height:90vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:var(--font-md);font-weight:700;margin-bottom:20px}
+.form-field{margin-bottom:16px}
+.form-label{font-size:var(--font-xs);font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:block}
+.form-input{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:var(--font-sm);outline:none;background:var(--bg);color:var(--text);-webkit-appearance:none}
+.form-input:focus{border-color:var(--accent);background:var(--white)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.type-pills{display:flex;gap:6px;flex-wrap:wrap}
+.type-pill{padding:6px 12px;border-radius:var(--radius-pill);border:1.5px solid var(--border);font-size:var(--font-xs);font-weight:600;cursor:pointer;transition:all 0.15s;background:none;color:var(--muted)}
+.type-pill.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.modal-actions button{flex:1;padding:13px;border-radius:var(--radius-sm);border:none;font-size:var(--font-sm);font-weight:700}
+
+/* ── Offline banner ───────────────────────────────────────────────── */
+#offlineBanner{background:#ff9500;color:#fff;text-align:center;font-size:var(--font-xs);font-weight:600;padding:5px;display:none;flex-shrink:0}
+
+/* ── Client portal ────────────────────────────────────────────────── */
+.portal-task{background:var(--white);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.portal-name{font-size:var(--font-base);font-weight:700;color:var(--text);margin-bottom:4px}
+.portal-meta{font-size:var(--font-xs);color:var(--muted);margin-bottom:10px}
+.portal-actions{display:flex;gap:8px}
+.portal-btn{flex:1;padding:10px;border-radius:var(--radius-sm);border:none;font-size:var(--font-sm);font-weight:700;cursor:pointer}
+.portal-approve{background:var(--green-light);color:var(--green-dark);border:1.5px solid var(--green)}
+.portal-revise{background:var(--red-light);color:var(--red);border:1.5px solid var(--red)}
+.portal-done-badge{background:var(--green-light);color:var(--green-dark);font-size:var(--font-sm);font-weight:700;padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--green);display:flex;align-items:center;gap:6px}
+
+/* ── Loading ──────────────────────────────────────────────────────── */
+#loadingOverlay{position:fixed;inset:0;background:var(--white);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:var(--font-sm);color:var(--muted);font-weight:600}
+
+/* ── Toast ────────────────────────────────────────────────────────── */
+#toastEl{position:fixed;bottom:calc(var(--nav-h) + var(--safe-bot) + 12px);left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:9px 18px;border-radius:var(--radius-pill);font-size:var(--font-sm);font-weight:600;pointer-events:none;opacity:0;transition:opacity 0.2s;z-index:9998;white-space:nowrap;max-width:90vw;text-overflow:ellipsis;overflow:hidden}
+#toastEl.show{opacity:1}
+
+/* ── FAB ──────────────────────────────────────────────────────────── */
+.fab{position:fixed;bottom:calc(var(--nav-h) + var(--safe-bot) + 16px);right:20px;width:52px;height:52px;border-radius:50%;background:var(--accent);border:none;box-shadow:0 4px 16px rgba(0,113,227,0.4);display:none;align-items:center;justify-content:center;z-index:100;cursor:pointer}
+.fab.visible{display:flex}
+.fab svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── Misc ─────────────────────────────────────────────────────────── */
+.divider{height:1px;background:var(--border-light);margin:8px 0}
+.pill-wrap{display:flex;flex-wrap:wrap;gap:5px}
+.search-wrap{position:relative;margin-bottom:14px}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted2);pointer-events:none}
+.search-input{width:100%;padding:10px 10px 10px 36px;border:1.5px solid var(--border);border-radius:var(--radius-pill);font-size:var(--font-sm);outline:none;background:var(--white);-webkit-appearance:none}
+.search-input:focus{border-color:var(--accent)}
+.back-btn{background:none;border:none;color:var(--accent);display:flex;align-items:center;gap:4px;font-size:var(--font-sm);font-weight:600;padding:0;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay">
+  <div style="width:52px;height:52px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:4px">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+  </div>
+  <div class="spinner"></div>
+  <div class="loading-text">Loading vekt…</div>
+</div>
+
+<!-- Toast -->
+<div id="toastEl"></div>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="fabAction()">
+  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- App shell -->
+<div id="app">
+
+  <!-- Offline banner -->
+  <div id="offlineBanner">⚡ Offline — showing cached data</div>
+
+  <!-- ════════ LOGIN SCREEN ════════ -->
+  <div class="screen active" id="loginScreen">
+    <div style="flex:1;overflow-y:auto;padding:32px 24px">
+      <div class="login-logo">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="login-title">vekt</div>
+      <div class="login-sub">Project tracking for small teams</div>
+
+      <!-- Step 1: Invite code -->
+      <div id="stepCode">
+        <div class="field-wrap">
+          <div class="field-label">Team Invite Code</div>
+          <input class="field-input" id="codeInput" type="text" maxlength="6" placeholder="e.g. ABC123" autocomplete="off" autocapitalize="characters" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')joinWithCode()">
+        </div>
+        <button class="btn-full btn-primary" onclick="joinWithCode()">Connect Team</button>
+        <div class="error-msg" id="codeError"></div>
+        <div style="text-align:center;margin-top:20px;font-size:var(--font-xs);color:var(--muted);line-height:1.6">
+          Get your invite code from the desktop app:<br>Settings → Integrations → Real-time Sync
+        </div>
+      </div>
+
+      <!-- Step 2: Pick user -->
+      <div id="stepUser" style="display:none">
+        <div style="font-size:var(--font-md);font-weight:700;margin-bottom:4px">Who are you?</div>
+        <div style="font-size:var(--font-sm);color:var(--muted);margin-bottom:18px">Select your account to continue</div>
+        <div class="user-grid" id="userGrid"></div>
+        <button class="btn-full btn-secondary" onclick="backToCode()" style="margin-top:8px">← Change Team</button>
+        <div class="error-msg" id="userError"></div>
+      </div>
+
+      <!-- Step 3: PIN -->
+      <div id="stepPin" style="display:none">
+        <div style="text-align:center;margin-bottom:20px">
+          <div id="pinUserAvatar" style="width:52px;height:52px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--font-lg);color:#fff"></div>
+          <div style="font-weight:700;font-size:var(--font-md)" id="pinUserName"></div>
+          <div style="font-size:var(--font-sm);color:var(--muted);margin-top:2px">Enter your PIN</div>
+        </div>
+        <div class="pin-dots" id="pinDots">
+          <div class="pin-dot" id="pd0"></div>
+          <div class="pin-dot" id="pd1"></div>
+          <div class="pin-dot" id="pd2"></div>
+          <div class="pin-dot" id="pd3"></div>
+        </div>
+        <div class="pin-grid">
+          <button class="pin-key" onclick="pinKey('1')">1</button>
+          <button class="pin-key" onclick="pinKey('2')">2</button>
+          <button class="pin-key" onclick="pinKey('3')">3</button>
+          <button class="pin-key" onclick="pinKey('4')">4</button>
+          <button class="pin-key" onclick="pinKey('5')">5</button>
+          <button class="pin-key" onclick="pinKey('6')">6</button>
+          <button class="pin-key" onclick="pinKey('7')">7</button>
+          <button class="pin-key" onclick="pinKey('8')">8</button>
+          <button class="pin-key" onclick="pinKey('9')">9</button>
+          <button class="pin-key" onclick="backToUsers()" style="font-size:11px;color:var(--muted)">←</button>
+          <button class="pin-key" onclick="pinKey('0')">0</button>
+          <button class="pin-key del" onclick="pinDel()">⌫</button>
+        </div>
+        <div class="error-msg" id="pinError" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ MAIN APP ════════ -->
+  <!-- Header (shared, content changes per tab) -->
+  <div class="header" id="mainHeader" style="display:none">
+    <div style="flex:1">
+      <div class="header-title" id="headerTitle">Today</div>
+      <div class="header-sub" id="headerSub"></div>
+    </div>
+    <button class="header-action" id="headerAction" style="display:none" onclick="headerActionFn()"></button>
+    <div id="headerAvatar" onclick="showProfile()" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--font-sm);color:#fff;cursor:pointer;flex-shrink:0"></div>
+  </div>
+
+  <!-- TODAY TAB -->
+  <div class="screen" id="tabToday">
+    <div class="scroll" id="todayScroll">
+      <div class="today-greeting" id="todayGreeting"></div>
+      <div class="today-date" id="todayDate"></div>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-num" id="statOverdue" style="color:var(--red)">0</div>
+          <div class="stat-lbl">Overdue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statToday" style="color:var(--orange)">0</div>
+          <div class="stat-lbl">Due Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statSoon" style="color:var(--accent)">0</div>
+          <div class="stat-lbl">Upcoming</div>
+        </div>
+      </div>
+      <div id="todayTasks"></div>
+    </div>
+  </div>
+
+  <!-- PROJECTS TAB -->
+  <div class="screen" id="tabProjects">
+    <!-- Project list view -->
+    <div id="projListView" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div style="padding:12px 16px 0">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" id="projSearch" placeholder="Search projects…" oninput="renderProjects()">
+        </div>
+      </div>
+      <div class="scroll-no-pad" style="padding:0 16px 80px" id="projList"></div>
+    </div>
+    <!-- Task detail view (inside a project) -->
+    <div id="projDetailView" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+      <div style="padding:10px 16px 0;flex-shrink:0">
+        <button class="back-btn" onclick="showProjList()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Projects
+        </button>
+        <div style="font-size:var(--font-md);font-weight:700;margin-top:6px;word-break:break-word" id="detailProjName"></div>
+        <div style="font-size:var(--font-xs);color:var(--muted);margin-top:2px" id="detailProjMeta"></div>
+      </div>
+      <div class="stage-filter" id="stageFilter"></div>
+      <div class="scroll-no-pad" style="padding:0 16px 80px" id="detailTasks"></div>
+    </div>
+  </div>
+
+  <!-- TRACKER TAB -->
+  <div class="screen" id="tabTracker">
+    <div style="padding:12px 16px 0;flex-shrink:0">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="trackerSearch" placeholder="Search entries…" oninput="renderTracker()">
+      </div>
+    </div>
+    <div class="scroll-no-pad" style="padding:0 16px 80px" id="trackerList"></div>
+  </div>
+
+  <!-- REMINDERS TAB -->
+  <div class="screen" id="tabReminders">
+    <div style="padding:12px 16px 0;flex-shrink:0">
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch" id="noteTypeFilter">
+        <button class="stage-pill active" data-type="" onclick="setNoteFilter(this,'')">All</button>
+        <button class="stage-pill" data-type="reminder" onclick="setNoteFilter(this,'reminder')">Reminders</button>
+        <button class="stage-pill" data-type="urgent" onclick="setNoteFilter(this,'urgent')">Urgent</button>
+        <button class="stage-pill" data-type="note" onclick="setNoteFilter(this,'note')">Notes</button>
+        <button class="stage-pill" data-type="idea" onclick="setNoteFilter(this,'idea')">Ideas</button>
+      </div>
+    </div>
+    <div class="scroll-no-pad" style="padding:0 16px 80px" id="reminderList"></div>
+  </div>
+
+  <!-- PORTAL TAB (client approval) -->
+  <div class="screen" id="tabPortal">
+    <div class="scroll" id="portalList"></div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div id="bottomNav">
+    <div class="nav-inner">
+      <button class="nav-btn active" id="nav-today" onclick="switchTab('today')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Today
+        <span class="nav-dot" id="dot-today"></span>
+      </button>
+      <button class="nav-btn" id="nav-projects" onclick="switchTab('projects')">
+        <svg viewBox="0 0 24 24"><path d="M2 20h20M4 20V10l8-7 8 7v10"/><path d="M9 20v-5h6v5"/></svg>
+        Projects
+      </button>
+      <button class="nav-btn" id="nav-tracker" onclick="switchTab('tracker')">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Tracker
+      </button>
+      <button class="nav-btn" id="nav-reminders" onclick="switchTab('reminders')">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        Reminders
+        <span class="nav-dot" id="dot-reminders"></span>
+      </button>
+      <button class="nav-btn" id="nav-portal" onclick="switchTab('portal')" style="display:none">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+        Portal
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal-overlay" id="addTaskModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add Task</div>
+    <div class="form-field">
+      <label class="form-label">Task Name *</label>
+      <input class="form-input" id="newTaskName" placeholder="What needs to be done?">
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Due Date</label>
+        <input class="form-input" id="newTaskDue" type="date">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Project</label>
+        <select class="form-input" id="newTaskProject"></select>
+      </div>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Person in Charge</label>
+      <input class="form-input" id="newTaskPerson" placeholder="Who handles this?">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Output Type</label>
+      <input class="form-input" id="newTaskOutput" placeholder="e.g. Report, Design, Video…">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Notes</label>
+      <textarea class="form-input" id="newTaskNotes" rows="2" placeholder="Additional details…" style="resize:none"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button style="background:var(--bg);color:var(--muted);border:1.5px solid var(--border)" onclick="closeModal('addTaskModal')">Cancel</button>
+      <button style="background:var(--accent);color:#fff" onclick="submitAddTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Note Modal -->
+<div class="modal-overlay" id="addNoteModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add Reminder / Note</div>
+    <div class="form-field">
+      <label class="form-label">Type</label>
+      <div class="type-pills">
+        <button class="type-pill active" data-type="note" onclick="selectNoteType(this)">📝 Note</button>
+        <button class="type-pill" data-type="reminder" onclick="selectNoteType(this)">🔔 Reminder</button>
+        <button class="type-pill" data-type="urgent" onclick="selectNoteType(this)">🔴 Urgent</button>
+        <button class="type-pill" data-type="idea" onclick="selectNoteType(this)">💡 Idea</button>
+      </div>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Title *</label>
+      <input class="form-input" id="newNoteTitle" placeholder="Note title…">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Details</label>
+      <textarea class="form-input" id="newNoteBody" rows="3" placeholder="Details or description…" style="resize:none"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Due Date</label>
+        <input class="form-input" id="newNoteDue" type="date">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Reminder</label>
+        <select class="form-input" id="newNoteAlarm">
+          <option value="0">No reminder</option>
+          <option value="1">Notify when due</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button style="background:var(--bg);color:var(--muted);border:1.5px solid var(--border)" onclick="closeModal('addNoteModal')">Cancel</button>
+      <button style="background:var(--accent);color:#fff" onclick="submitAddNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task Detail / Comments -->
+<div class="modal-overlay" id="taskDetailModal" style="align-items:stretch">
+  <div style="background:var(--white);width:100%;height:100%;display:flex;flex-direction:column;padding-top:var(--safe-top)">
+    <div class="header">
+      <button class="back-btn" onclick="closeModal('taskDetailModal')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </button>
+      <div style="flex:1;margin-left:8px">
+        <div class="header-title" id="detailTaskName" style="font-size:var(--font-sm)"></div>
+      </div>
+    </div>
+    <div class="scroll" id="taskDetailBody" style="flex:1"></div>
+    <div class="comment-input-wrap" id="commentInputWrap">
+      <textarea class="comment-input" id="commentInput" placeholder="Add a comment…" rows="1" oninput="autoGrow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendComment()}"></textarea>
+      <button class="comment-send" onclick="sendComment()">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile / Settings -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <div id="profileAvatar" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--font-lg);color:#fff;flex-shrink:0"></div>
+      <div>
+        <div style="font-weight:700;font-size:var(--font-md)" id="profileName"></div>
+        <div style="font-size:var(--font-xs);color:var(--muted)" id="profileRole"></div>
+      </div>
+    </div>
+    <div class="divider" style="margin-bottom:16px"></div>
+    <button onclick="switchUser()" style="width:100%;text-align:left;padding:12px 0;background:none;border:none;border-bottom:1px solid var(--border-light);font-size:var(--font-sm);font-weight:600;color:var(--text);display:flex;align-items:center;gap:10px">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Switch User
+    </button>
+    <button onclick="logout()" style="width:100%;text-align:left;padding:12px 0;background:none;border:none;font-size:var(--font-sm);font-weight:600;color:var(--red);display:flex;align-items:center;gap:10px;margin-top:4px">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out & Change Team
+    </button>
+    <button onclick="closeModal('profileModal')" class="btn-full btn-secondary" style="margin-top:16px">Close</button>
+  </div>
+</div>
+
+<!-- Revision modal (for tracker entries) -->
+<div class="modal-overlay" id="revisionModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="revModalTitle">Add Revision</div>
+    <div style="font-size:var(--font-xs);color:var(--muted);margin-bottom:14px" id="revModalSub"></div>
+    <div class="form-field">
+      <label class="form-label">New Due Date *</label>
+      <input class="form-input" id="revDue" type="date">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Completion Date</label>
+      <input class="form-input" id="revComp" type="date">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Revision Details</label>
+      <textarea class="form-input" id="revDetails" rows="2" placeholder="What changed?" style="resize:none"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button style="background:var(--bg);color:var(--muted);border:1.5px solid var(--border)" onclick="closeModal('revisionModal')">Cancel</button>
+      <button style="background:var(--accent);color:#fff" onclick="submitRevision()">Save Revision</button>
+    </div>
+  </div>
+</div>
+
+<!-- Supabase JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+'use strict';
+// ═══════════════════════ VEKT PWA ════════════════════════════════════════════
+// Single-file Progressive Web App for vekt
+// Connects to team's Supabase project via invite code
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── Constants ─────────────────────────────────────────────────────────────
+const RELAY_URL = 'https://kpwsetzamovpgkiwsuno.supabase.co';
+const RELAY_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtwd3NldHphbW92cGdraXdzdW5vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0NjkzMjYsImV4cCI6MjA4OTA0NTMyNn0.uyiUYh9vx5CdB2CrdNa4fmwReRv4HJNV2CftSmUwPXM';
+const TABLE     = 'vekt_sync';
+
+const SK = {
+  USERS:    'wlt_users_v1',
+  SETTINGS: 'wlt_settings_v1',
+  PROJECTS: 'wlt_shared_proj_v1',
+  TASKS:    'wlt_shared_tasks_v1',
+  COMMENTS: 'wlt_comments_v1',
+  NOTES:    'wlt_notes_v1',
+  ENTRIES:  'wlt_entries_v4',
+  ASSIGNMENTS: 'wlt_assignments_v1',
+};
+
+// ── App state ──────────────────────────────────────────────────────────────
+let _client       = null;  // team Supabase client
+let _workspaceId  = '';
+let _activeUser   = null;  // { id, name, role, color, ... }
+let _data         = {};    // cached Supabase data
+let _offline      = false;
+let _currentTab   = 'today';
+let _currentProj  = null;
+let _stageFilter  = '';
+let _noteFilter   = '';
+let _commentTaskId= null;
+let _revEntryId   = null;
+let _pinBuffer    = '';
+let _selectedUser = null;
+let _realtime     = null;
+
+// ── Storage helpers ────────────────────────────────────────────────────────
+const LS = {
+  get: k => { try { return JSON.parse(localStorage.getItem('vekt_pwa_'+k)); } catch { return null; } },
+  set: (k,v) => { try { localStorage.setItem('vekt_pwa_'+k, JSON.stringify(v)); } catch {} },
+  del: k => { try { localStorage.removeItem('vekt_pwa_'+k); } catch {} },
+};
+
+// ── Date helpers ───────────────────────────────────────────────────────────
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+function fmtDate(str) {
+  if (!str) return '—';
+  const d = new Date(str + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+function daysUntil(str) {
+  if (!str) return null;
+  const t = today();
+  if (str < t) return -Math.round((new Date(t+'T00:00:00') - new Date(str+'T00:00:00')) / 86400000);
+  if (str === t) return 0;
+  return Math.round((new Date(str+'T00:00:00') - new Date(t+'T00:00:00')) / 86400000);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Avatar color ───────────────────────────────────────────────────────────
+const COLORS = ['#0071e3','#34c759','#ff9500','#ff3b30','#af52de','#00c7be','#30b0c7','#5856d6'];
+function avatarColor(name) {
+  let h = 0;
+  for (let i = 0; i < (name||'').length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return COLORS[Math.abs(h) % COLORS.length];
+}
+function avatarInitial(name) { return (name||'?')[0].toUpperCase(); }
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg, dur=2500) {
+  const el = document.getElementById('toastEl');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ── Show/hide loading ──────────────────────────────────────────────────────
+function showLoading(msg) {
+  const ov = document.getElementById('loadingOverlay');
+  const lt = ov.querySelector('.loading-text');
+  if (lt) lt.textContent = msg || 'Loading…';
+  ov.style.display = 'flex';
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// ── Modal helpers ──────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Online/offline detection ───────────────────────────────────────────────
+window.addEventListener('online',  () => { _offline = false; document.getElementById('offlineBanner').style.display='none'; if(_client) refreshData(); });
+window.addEventListener('offline', () => { _offline = true;  document.getElementById('offlineBanner').style.display='block'; });
+
+// ═══════════════════════ BOOT ═════════════════════════════════════════════
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  hideLoading();
+
+  // Try to restore session
+  const saved = LS.get('session');
+  if (saved && saved.supabaseUrl && saved.supabaseKey && saved.workspaceId && saved.user) {
+    showLoading('Reconnecting…');
+    try {
+      await initSupabase(saved.supabaseUrl, saved.supabaseKey, saved.workspaceId);
+      _activeUser = saved.user;
+      await refreshData();
+      showApp();
+      hideLoading();
+      return;
+    } catch(e) {
+      console.warn('Session restore failed:', e);
+      LS.del('session');
+    }
+    hideLoading();
+  }
+});
+
+// ═══════════════════════ LOGIN FLOW ══════════════════════════════════════
+
+async function joinWithCode() {
+  const code = document.getElementById('codeInput').value.trim().toUpperCase();
+  const errEl = document.getElementById('codeError');
+  errEl.textContent = '';
+  if (!code || code.length < 4) { errEl.textContent = 'Enter your 6-character invite code.'; return; }
+
+  showLoading('Connecting team…');
+  try {
+    const relay = supabase.createClient(RELAY_URL, RELAY_KEY);
+    const { data, error } = await relay
+      .from('vekt_invite_codes')
+      .select('supabase_url, supabase_key, workspace_id')
+      .eq('code', code)
+      .single();
+
+    if (error || !data) throw new Error('Code not found. Check the code and try again.');
+
+    await initSupabase(data.supabase_url, data.supabase_key, data.workspace_id);
+    LS.set('teamCreds', { supabaseUrl: data.supabase_url, supabaseKey: data.supabase_key, workspaceId: data.workspace_id });
+
+    hideLoading();
+    showStepUser();
+  } catch(e) {
+    hideLoading();
+    errEl.textContent = e.message || 'Could not connect. Check your code.';
+  }
+}
+
+async function initSupabase(url, key, workspaceId) {
+  _client = supabase.createClient(url, key);
+  _workspaceId = workspaceId;
+  await loadData();
+}
+
+function showStepUser() {
+  document.getElementById('stepCode').style.display = 'none';
+  document.getElementById('stepUser').style.display = 'block';
+  document.getElementById('stepPin').style.display  = 'none';
+
+  const users = _data[SK.USERS] || [];
+  const grid  = document.getElementById('userGrid');
+  if (!users.length) {
+    grid.innerHTML = '<div style="color:var(--muted);font-size:var(--font-sm);grid-column:1/-1">No users found. Make sure the desktop app has users set up.</div>';
+    return;
+  }
+  grid.innerHTML = users.map(u => `
+    <div class="user-tile" onclick="selectUser('${u.id}')" id="utile-${u.id}">
+      <div class="user-avatar" style="background:${avatarColor(u.name)}">${avatarInitial(u.name)}</div>
+      <div class="user-tile-name">${esc(u.name)}</div>
+    </div>`).join('');
+}
+
+function selectUser(uid) {
+  const users = _data[SK.USERS] || [];
+  _selectedUser = users.find(u => u.id === uid);
+  if (!_selectedUser) return;
+
+  document.querySelectorAll('.user-tile').forEach(t => t.classList.remove('selected'));
+  document.getElementById('utile-' + uid)?.classList.add('selected');
+
+  // Check if user has a PIN set
+  const hasPin = !!_selectedUser.webPin;
+  if (!hasPin) {
+    // No PIN — log in directly
+    completeLogin(_selectedUser);
+    return;
+  }
+  showStepPin(_selectedUser);
+}
+
+function showStepPin(user) {
+  _pinBuffer = '';
+  document.getElementById('stepUser').style.display = 'none';
+  document.getElementById('stepPin').style.display  = 'block';
+  const av = document.getElementById('pinUserAvatar');
+  av.style.background = avatarColor(user.name);
+  av.textContent = avatarInitial(user.name);
+  document.getElementById('pinUserName').textContent = user.name;
+  updatePinDots();
+}
+
+function pinKey(k) {
+  if (_pinBuffer.length >= 4) return;
+  _pinBuffer += k;
+  updatePinDots();
+  if (_pinBuffer.length === 4) setTimeout(checkPin, 150);
+}
+function pinDel() { _pinBuffer = _pinBuffer.slice(0,-1); updatePinDots(); }
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('pd'+i);
+    if (d) d.classList.toggle('filled', i < _pinBuffer.length);
+  }
+}
+function checkPin() {
+  const errEl = document.getElementById('pinError');
+  if (_pinBuffer === String(_selectedUser.webPin)) {
+    completeLogin(_selectedUser);
+  } else {
+    errEl.textContent = 'Incorrect PIN. Try again.';
+    _pinBuffer = '';
+    updatePinDots();
+    setTimeout(() => { errEl.textContent = ''; }, 2000);
+  }
+}
+
+function completeLogin(user) {
+  _activeUser = user;
+  const creds = LS.get('teamCreds') || {};
+  LS.set('session', { ...creds, user });
+  showApp();
+}
+
+function backToCode() {
+  document.getElementById('stepCode').style.display = 'block';
+  document.getElementById('stepUser').style.display = 'none';
+  document.getElementById('stepPin').style.display  = 'none';
+}
+function backToUsers() { showStepUser(); }
+
+// ═══════════════════════ DATA LAYER ══════════════════════════════════════
+
+async function loadData() {
+  if (!_client) return;
+  try {
+    const { data: rows, error } = await _client
+      .from(TABLE)
+      .select('key, value')
+      .eq('workspace_id', _workspaceId);
+
+    if (error) throw error;
+
+    // Build data map
+    const fresh = {};
+    (rows || []).forEach(r => {
+      try { fresh[r.key] = typeof r.value === 'string' ? JSON.parse(r.value) : r.value; }
+      catch { fresh[r.key] = r.value; }
+    });
+    _data = fresh;
+
+    // Cache for offline use
+    LS.set('dataCache', _data);
+  } catch(e) {
+    console.warn('loadData error:', e);
+    // Fall back to cache
+    const cached = LS.get('dataCache');
+    if (cached) { _data = cached; _offline = true; document.getElementById('offlineBanner').style.display = 'block'; }
+    else throw e;
+  }
+}
+
+async function refreshData() {
+  await loadData();
+  renderCurrentTab();
+}
+
+async function writeKey(key, value) {
+  if (_offline) { toast('Cannot save — offline'); return false; }
+  try {
+    const { error } = await _client.from(TABLE).upsert(
+      { workspace_id: _workspaceId, key, value: JSON.stringify(value), updated_at: new Date().toISOString() },
+      { onConflict: 'workspace_id,key' }
+    );
+    if (error) throw error;
+    _data[key] = value;
+    LS.set('dataCache', _data);
+    return true;
+  } catch(e) {
+    toast('Save failed: ' + e.message);
+    return false;
+  }
+}
+
+// Write per-user key (namespaced)
+function userKey(baseKey) { return _activeUser ? 'usr_' + _activeUser.id + '_' + baseKey : baseKey; }
+
+async function writeUserKey(baseKey, value) {
+  return writeKey(userKey(baseKey), value);
+}
+
+function getUserData(baseKey) {
+  return _data[userKey(baseKey)] || _data[baseKey] || null;
+}
+
+// Subscribe to realtime changes
+function subscribeRealtime() {
+  if (_realtime || !_client) return;
+  _realtime = _client
+    .channel('vekt-pwa-' + _workspaceId)
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: TABLE,
+      filter: 'workspace_id=eq.' + _workspaceId
+    }, payload => {
+      const row = payload.new || payload.old;
+      if (!row) return;
+      try {
+        const val = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+        _data[row.key] = val;
+        LS.set('dataCache', _data);
+      } catch {}
+      renderCurrentTab();
+    })
+    .subscribe();
+}
+
+// ═══════════════════════ SHOW APP ════════════════════════════════════════
+
+function showApp() {
+  // Hide login, show main
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('mainHeader').style.display = 'flex';
+  document.getElementById('bottomNav').style.display  = 'block';
+
+  // Setup header avatar
+  const av = document.getElementById('headerAvatar');
+  av.style.background = avatarColor(_activeUser.name);
+  av.textContent = avatarInitial(_activeUser.name);
+
+  // Show client portal tab if user has no role (external client)
+  const isClient = !_activeUser.role || _activeUser.role === '4';
+  if (isClient) {
+    document.getElementById('nav-portal').style.display = 'flex';
+  }
+
+  // Subscribe to realtime
+  subscribeRealtime();
+
+  switchTab('today');
+}
+
+// ═══════════════════════ TAB NAVIGATION ══════════════════════════════════
+
+const TAB_CONFIG = {
+  today:     { title:'Today',     fab:false },
+  projects:  { title:'Projects',  fab:true  },
+  tracker:   { title:'Tracker',   fab:false },
+  reminders: { title:'Reminders', fab:true  },
+  portal:    { title:'Portal',    fab:false },
+};
+
+function switchTab(tab) {
+  _currentTab = tab;
+  // Update nav buttons
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-' + tab)?.classList.add('active');
+  // Update screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
+  // Update header
+  const cfg = TAB_CONFIG[tab] || {};
+  document.getElementById('headerTitle').textContent = cfg.title || tab;
+  document.getElementById('headerSub').textContent = '';
+  document.getElementById('headerAction').style.display = 'none';
+  // FAB
+  const fab = document.getElementById('fab');
+  if (cfg.fab) fab.classList.add('visible'); else fab.classList.remove('visible');
+  // Render
+  renderCurrentTab();
+}
+
+function renderCurrentTab() {
+  switch(_currentTab) {
+    case 'today':     renderToday();     break;
+    case 'projects':  renderProjects();  break;
+    case 'tracker':   renderTracker();   break;
+    case 'reminders': renderReminders(); break;
+    case 'portal':    renderPortal();    break;
+  }
+}
+
+function fabAction() {
+  if (_currentTab === 'projects') openAddTask();
+  else if (_currentTab === 'reminders') openAddNote();
+}
+
+// ═══════════════════════ TODAY ════════════════════════════════════════════
+
+function renderToday() {
+  const td    = today();
+  const tasks = (_data[SK.TASKS] || []).filter(t => !t.done && t.due);
+  const uid   = _activeUser?.id;
+
+  const overdue = tasks.filter(t => t.due < td);
+  const dueToday= tasks.filter(t => t.due === td);
+  const soon    = tasks.filter(t => t.due > td && daysUntil(t.due) <= 7);
+
+  document.getElementById('statOverdue').textContent = overdue.length;
+  document.getElementById('statToday').textContent   = dueToday.length;
+  document.getElementById('statSoon').textContent    = soon.length;
+
+  // Greeting
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('todayGreeting').textContent = greet + ', ' + (_activeUser?.name?.split(' ')[0] || '') + '.';
+  document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+
+  // Tasks — overdue + today + soon, prioritized
+  const sections = [];
+  if (overdue.length)  sections.push({ label:'Overdue', tasks: overdue, badgeClass:'badge-overdue' });
+  if (dueToday.length) sections.push({ label:'Due Today', tasks: dueToday, badgeClass:'badge-today' });
+  if (soon.length)     sections.push({ label:'Upcoming (7 days)', tasks: soon, badgeClass:'badge-soon' });
+
+  if (!sections.length) {
+    document.getElementById('todayTasks').innerHTML = `
+      <div class="empty">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <div class="empty-title">All clear!</div>
+        <div class="empty-sub">No overdue or upcoming tasks</div>
+      </div>`;
+    return;
+  }
+
+  // Update nav dot
+  document.getElementById('dot-today').style.display = overdue.length ? 'block' : 'none';
+
+  document.getElementById('todayTasks').innerHTML = sections.map(sec => `
+    <div class="section-label">${sec.label}</div>
+    ${sec.tasks.map(t => renderTaskCard(t, sec.badgeClass)).join('')}
+  `).join('');
+}
+
+function renderTaskCard(t, badgeClass) {
+  const proj = (_data[SK.PROJECTS] || []).find(p => p.id === t.projectId);
+  const projName = proj ? (proj.name || proj.client || '') : '';
+  const comments = (_data[SK.COMMENTS] || {})[String(t.id)] || [];
+  const commentCount = Array.isArray(comments) ? comments.length : 0;
+
+  return `<div class="task-card ${t.done ? 'done-card' : ''}" id="tc-${t.id}">
+    <div class="task-check ${t.done ? 'checked' : ''}" onclick="toggleDone('${t.id}')">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="task-body">
+      <div class="task-name">${esc(t.name)}</div>
+      <div class="task-meta">
+        ${badgeClass ? `<span class="task-badge ${badgeClass}">${getDueLabel(t)}</span>` : ''}
+        ${projName ? `<span class="task-badge badge-project">${esc(projName)}</span>` : ''}
+        ${t.person ? `<span class="task-badge badge-person">${esc(t.person)}</span>` : ''}
+      </div>
+      <div class="task-actions">
+        <button class="task-btn" onclick="openTaskDetail('${t.id}')">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Comments${commentCount ? ' ('+commentCount+')' : ''}
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function getDueLabel(t) {
+  const d = daysUntil(t.due);
+  if (d === null) return '';
+  if (d < 0)  return Math.abs(d) + 'd overdue';
+  if (d === 0) return 'Due today';
+  return 'Due in ' + d + 'd';
+}
+
+// ═══════════════════════ MARK DONE ═══════════════════════════════════════
+
+async function toggleDone(taskId) {
+  if (_offline) { toast('Cannot update tasks while offline'); return; }
+  const tasks = JSON.parse(JSON.stringify(_data[SK.TASKS] || []));
+  const task  = tasks.find(t => String(t.id) === String(taskId));
+  if (!task) return;
+
+  const wasDone = task.done;
+  task.done = !wasDone;
+
+  if (task.done) {
+    task.completedAt = today();
+    // Auto-create tracker entry (same logic as desktop)
+    const proj = (_data[SK.PROJECTS] || []).find(p => p.id === task.projectId);
+    const clientName = proj ? (proj.name || proj.client || '') : '';
+    if (clientName) {
+      const uid = _activeUser.id;
+      const entriesKey = 'usr_' + uid + '_' + SK.ENTRIES;
+      const entries = JSON.parse(JSON.stringify(_data[entriesKey] || []));
+      const alreadyLogged = entries.some(e => e.fromTask === task.id);
+      if (!alreadyLogged) {
+        const td = today();
+        entries.unshift({
+          id:              Date.now(),
+          client:          clientName,
+          taskName:        task.name,
+          output:          task.output || task.name,
+          person:          task.person || '',
+          dueDate:         task.due || td,
+          originalDueDate: task.originalDue || null,
+          completionDate:  td,
+          revisions:       [],
+          remarks:         'done',
+          fromTask:        task.id,
+        });
+        await writeKey(entriesKey, entries);
+      }
+    }
+    toast('Task done ✓ — entry added to Tracker');
+  } else {
+    toast('Task unmarked');
+  }
+
+  await writeKey(SK.TASKS, tasks);
+
+  // Update UI immediately
+  const card = document.getElementById('tc-' + taskId);
+  if (card) {
+    const check = card.querySelector('.task-check');
+    if (check) {
+      if (task.done) check.classList.add('checked'); else check.classList.remove('checked');
+    }
+    if (task.done) card.classList.add('done-card'); else card.classList.remove('done-card');
+  }
+
+  // Re-render stats
+  if (_currentTab === 'today') renderToday();
+}
+
+// ═══════════════════════ PROJECTS ════════════════════════════════════════
+
+function renderProjects() {
+  if (document.getElementById('projDetailView').style.display !== 'none') {
+    renderProjectDetail();
+    return;
+  }
+
+  const q    = (document.getElementById('projSearch')?.value || '').toLowerCase();
+  const projs = (_data[SK.PROJECTS] || []).filter(p => !q || (p.name||'').toLowerCase().includes(q) || (p.client||'').toLowerCase().includes(q));
+  const tasks = _data[SK.TASKS] || [];
+
+  if (!projs.length) {
+    document.getElementById('projList').innerHTML = `<div class="empty" style="padding-top:60px">
+      <svg viewBox="0 0 24 24"><path d="M2 20h20M4 20V10l8-7 8 7v10"/><path d="M9 20v-5h6v5"/></svg>
+      <div class="empty-title">No projects yet</div>
+      <div class="empty-sub">Projects will appear here once created on desktop</div>
+    </div>`;
+    return;
+  }
+
+  document.getElementById('projList').innerHTML = projs.map(p => {
+    const pts    = tasks.filter(t => t.projectId === p.id);
+    const done   = pts.filter(t => t.done).length;
+    const active = pts.filter(t => !t.done).length;
+    const color  = p.color || avatarColor(p.name || p.client || 'p');
+    return `<div class="proj-card" onclick="openProject('${p.id}')">
+      <div class="proj-dot" style="background:${color}"></div>
+      <div class="proj-info">
+        <div class="proj-name">${esc(p.name || p.client || 'Untitled')}</div>
+        <div class="proj-meta">${active} active · ${done} done</div>
+      </div>
+      <svg class="proj-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('');
+}
+
+function openProject(projId) {
+  const proj = (_data[SK.PROJECTS] || []).find(p => p.id === projId);
+  if (!proj) return;
+  _currentProj  = projId;
+  _stageFilter  = '';
+  document.getElementById('projListView').style.display   = 'none';
+  document.getElementById('projDetailView').style.display = 'flex';
+  document.getElementById('detailProjName').textContent = proj.name || proj.client || 'Project';
+  renderProjectDetail();
+}
+
+function showProjList() {
+  _currentProj = null;
+  document.getElementById('projListView').style.display   = 'flex';
+  document.getElementById('projDetailView').style.display = 'none';
+  document.getElementById('fab').classList.add('visible');
+}
+
+function renderProjectDetail() {
+  if (!_currentProj) return;
+  const proj  = (_data[SK.PROJECTS] || []).find(p => p.id === _currentProj);
+  if (!proj) return;
+  const tasks = (_data[SK.TASKS] || []).filter(t => t.projectId === _currentProj);
+  const settings = _data[SK.SETTINGS] || {};
+
+  // Stages
+  const stages = settings.taskStages || ['Not Started','In Progress','For Review','Done'];
+  const stageFilter = document.getElementById('stageFilter');
+  stageFilter.innerHTML = `<button class="stage-pill ${!_stageFilter?'active':''}" onclick="setStageFilter('')">All (${tasks.length})</button>` +
+    stages.map(s => {
+      const cnt = tasks.filter(t => (t.stage || tasks[0]?.stage || 'Not Started') === s || (!t.stage && s === stages[0])).length;
+      return `<button class="stage-pill ${_stageFilter===s?'active':''}" onclick="setStageFilter('${esc(s)}')">${esc(s)} (${cnt})</button>`;
+    }).join('');
+
+  // Task count meta
+  const done   = tasks.filter(t => t.done).length;
+  const active = tasks.filter(t => !t.done).length;
+  document.getElementById('detailProjMeta').textContent = `${active} active · ${done} done`;
+
+  // Filter tasks
+  const filtered = _stageFilter
+    ? tasks.filter(t => (t.stage || '') === _stageFilter)
+    : tasks;
+
+  if (!filtered.length) {
+    document.getElementById('detailTasks').innerHTML = `<div class="empty" style="padding-top:40px">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <div class="empty-title">No tasks here</div>
+      <div class="empty-sub">Add a task with the + button</div>
+    </div>`;
+    return;
+  }
+
+  const td = today();
+  document.getElementById('detailTasks').innerHTML = filtered.map(t => {
+    const daysLeft = daysUntil(t.due);
+    let badgeClass = '';
+    if (t.done) badgeClass = '';
+    else if (t.due && t.due < td) badgeClass = 'badge-overdue';
+    else if (t.due === td) badgeClass = 'badge-today';
+    return renderTaskCard(t, badgeClass);
+  }).join('');
+}
+
+function setStageFilter(s) {
+  _stageFilter = s;
+  renderProjectDetail();
+}
+
+// ═══════════════════════ ADD TASK ════════════════════════════════════════
+
+function openAddTask() {
+  // Populate project dropdown
+  const sel = document.getElementById('newTaskProject');
+  const projs = _data[SK.PROJECTS] || [];
+  sel.innerHTML = projs.map(p => `<option value="${p.id}">${esc(p.name || p.client || 'Untitled')}</option>`).join('');
+  // Pre-select current project
+  if (_currentProj) sel.value = _currentProj;
+  // Default due date to today
+  document.getElementById('newTaskDue').value = today();
+  document.getElementById('newTaskName').value = '';
+  document.getElementById('newTaskPerson').value = '';
+  document.getElementById('newTaskOutput').value = '';
+  document.getElementById('newTaskNotes').value = '';
+  openModal('addTaskModal');
+  setTimeout(() => document.getElementById('newTaskName').focus(), 100);
+}
+
+async function submitAddTask() {
+  const name = document.getElementById('newTaskName').value.trim();
+  if (!name) { toast('Task name is required'); return; }
+
+  const projId = document.getElementById('newTaskProject').value;
+  const due    = document.getElementById('newTaskDue').value;
+  const person = document.getElementById('newTaskPerson').value.trim();
+  const output = document.getElementById('newTaskOutput').value.trim();
+  const notes  = document.getElementById('newTaskNotes').value.trim();
+
+  const tasks = JSON.parse(JSON.stringify(_data[SK.TASKS] || []));
+  const newTask = {
+    id:          Date.now(),
+    projectId:   projId,
+    name, output, person, due, notes,
+    done:        false,
+    recur:       '',
+    recurDay:    '',
+    alarm:       false,
+    remindedDays:[],
+    createdBy:   _activeUser?.id || null,
+    assignedTo:  null,
+  };
+  tasks.push(newTask);
+
+  const ok = await writeKey(SK.TASKS, tasks);
+  if (ok) {
+    closeModal('addTaskModal');
+    toast('Task added ✓');
+    renderCurrentTab();
+  }
+}
+
+// ═══════════════════════ TASK DETAIL / COMMENTS ══════════════════════════
+
+function openTaskDetail(taskId) {
+  const tasks = _data[SK.TASKS] || [];
+  const task  = tasks.find(t => String(t.id) === String(taskId));
+  if (!task) return;
+
+  _commentTaskId = taskId;
+  document.getElementById('detailTaskName').textContent = task.name;
+
+  const proj = (_data[SK.PROJECTS] || []).find(p => p.id === task.projectId);
+  const projName = proj ? (proj.name || proj.client || '') : '';
+  const comments = (_data[SK.COMMENTS] || {})[String(taskId)] || [];
+  const users    = _data[SK.USERS] || [];
+  const td       = today();
+
+  document.getElementById('taskDetailBody').innerHTML = `
+    <!-- Task info -->
+    <div class="card-sm" style="margin:12px 16px 0">
+      ${projName ? `<div style="font-size:var(--font-xs);color:var(--muted);margin-bottom:4px">${esc(projName)}</div>` : ''}
+      <div style="font-weight:700;font-size:var(--font-base);margin-bottom:8px">${esc(task.name)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${task.notes?'10px':'0'}">
+        ${task.due ? `<span class="task-badge ${task.due < td ? 'badge-overdue' : task.due === td ? 'badge-today' : 'badge-soon'}">${fmtDate(task.due)}</span>` : ''}
+        ${task.person ? `<span class="task-badge badge-person">${esc(task.person)}</span>` : ''}
+        ${task.output ? `<span class="task-badge badge-stage">${esc(task.output)}</span>` : ''}
+        ${task.done ? `<span class="task-badge" style="background:var(--green-light);color:var(--green-dark)">✓ Done</span>` : ''}
+      </div>
+      ${task.notes ? `<div style="font-size:var(--font-sm);color:var(--muted);line-height:1.5;margin-top:6px">${esc(task.notes)}</div>` : ''}
+    </div>
+    <!-- Mark done button -->
+    ${!task.done ? `<div style="padding:10px 16px 0">
+      <button class="task-btn done-btn" style="width:100%;justify-content:center;padding:10px" onclick="toggleDone('${taskId}');closeModal('taskDetailModal')">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Mark as Done
+      </button>
+    </div>` : ''}
+    <!-- Comments -->
+    <div style="padding:14px 16px 4px;font-size:var(--font-xs);font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">
+      Comments ${comments.length ? '(' + comments.length + ')' : ''}
+    </div>
+    <div style="padding:0 16px">
+      ${!comments.length ? `<div style="font-size:var(--font-sm);color:var(--muted2);padding:8px 0">No comments yet. Be the first to comment.</div>` : ''}
+      ${(Array.isArray(comments) ? comments : []).map(c => {
+        const author = c._system ? null : users.find(u => u.id === c.authorId || u.name === c.author);
+        const name   = c._system ? 'System' : (author?.name || c.author || 'Unknown');
+        const color  = c._system ? '#8e8e93' : avatarColor(name);
+        const time   = c.ts ? new Date(c.ts).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+        return `<div class="comment">
+          <div class="comment-avatar" style="background:${color}">${c._system ? '⚙' : avatarInitial(name)}</div>
+          <div class="comment-body">
+            <div class="comment-author">${esc(name)}</div>
+            <div class="comment-text">${esc(c.text || '')}</div>
+            ${time ? `<div class="comment-time">${time}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+
+  document.getElementById('commentInput').value = '';
+  openModal('taskDetailModal');
+  // Scroll to bottom of comments
+  setTimeout(() => {
+    const body = document.getElementById('taskDetailBody');
+    body.scrollTop = body.scrollHeight;
+  }, 100);
+}
+
+async function sendComment() {
+  const input = document.getElementById('commentInput');
+  const text  = input.value.trim();
+  if (!text || !_commentTaskId) return;
+
+  const comments = JSON.parse(JSON.stringify(_data[SK.COMMENTS] || {}));
+  const key = String(_commentTaskId);
+  if (!Array.isArray(comments[key])) comments[key] = [];
+  comments[key].push({
+    id:       Date.now(),
+    author:   _activeUser?.name || 'Unknown',
+    authorId: _activeUser?.id,
+    text,
+    ts:       Date.now(),
+    replies:  [],
+  });
+
+  const ok = await writeKey(SK.COMMENTS, comments);
+  if (ok) {
+    input.value = '';
+    input.style.height = 'auto';
+    toast('Comment added ✓');
+    openTaskDetail(_commentTaskId); // re-render
+  }
+}
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+// ═══════════════════════ TRACKER ════════════════════════════════════════
+
+function renderTracker() {
+  const uid   = _activeUser?.id;
+  const entriesKey = 'usr_' + uid + '_' + SK.ENTRIES;
+  let entries = _data[entriesKey] || [];
+  const q     = (document.getElementById('trackerSearch')?.value || '').toLowerCase();
+
+  if (q) entries = entries.filter(e =>
+    (e.client||'').toLowerCase().includes(q) ||
+    (e.taskName||'').toLowerCase().includes(q) ||
+    (e.person||'').toLowerCase().includes(q)
+  );
+
+  if (!entries.length) {
+    document.getElementById('trackerList').innerHTML = `<div class="empty" style="padding-top:60px">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div class="empty-title">No tracker entries yet</div>
+      <div class="empty-sub">Mark tasks as done to create entries automatically</div>
+    </div>`;
+    return;
+  }
+
+  // Group by mother/child — show only mother entries at top level
+  // Children (from revisions) are shown nested under their mother
+  const mothers  = entries.filter(e => !e.fromRevision);
+  const children = entries.filter(e =>  e.fromRevision);
+
+  function getChildren(motherId) {
+    return children.filter(c => c.fromRevision === motherId || c.rootId === motherId);
+  }
+
+  function renderEntry(e, isChild) {
+    const statusMap = {
+      'done':          { label:'Done',          cls:'status-done' },
+      'revised':       { label:'Revised',       cls:'status-revised' },
+      'revision-done': { label:'Revision Done', cls:'status-revision-done' },
+    };
+    const st = statusMap[e.remarks] || { label: e.remarks || '', cls:'status-done' };
+    const kids = isChild ? [] : getChildren(e.id);
+
+    return `<div class="entry-card${isChild ? ' entry-child' : ''}" style="${isChild ? 'margin-left:16px;border-left:2px solid var(--border);padding-left:10px;margin-bottom:6px' : ''}">
+      <div class="entry-header">
+        <div class="entry-name">${esc(e.taskName || e.client || 'Entry')}</div>
+        <span class="entry-status ${st.cls}">${st.label}</span>
+      </div>
+      <div class="entry-meta">
+        <span>${esc(e.client || '')}</span>
+        ${e.dueDate ? `<span>Due: ${fmtDate(e.dueDate)}</span>` : ''}
+        ${e.completionDate ? `<span>Done: ${fmtDate(e.completionDate)}</span>` : ''}
+        ${e.person ? `<span>${esc(e.person)}</span>` : ''}
+      </div>
+      ${!isChild && e.remarks === 'done' ? `
+        <div style="margin-top:8px">
+          <button class="task-btn primary" style="font-size:10px;padding:4px 10px" onclick="openRevisionModal('${e.id}')">
+            + Add Revision
+          </button>
+        </div>` : ''}
+      ${kids.map(c => renderEntry(c, true)).join('')}
+    </div>`;
+  }
+
+  document.getElementById('trackerList').innerHTML = mothers.map(e => renderEntry(e, false)).join('');
+}
+
+// ── Revision modal ─────────────────────────────────────────────────────────
+function openRevisionModal(entryId) {
+  _revEntryId = entryId;
+  const uid = _activeUser?.id;
+  const entries = _data['usr_' + uid + '_' + SK.ENTRIES] || [];
+  const entry   = entries.find(e => String(e.id) === String(entryId));
+  if (!entry) return;
+  document.getElementById('revModalTitle').textContent = 'Add Revision';
+  document.getElementById('revModalSub').textContent   = entry.taskName || entry.client || '';
+  document.getElementById('revDue').value  = today();
+  document.getElementById('revComp').value = '';
+  document.getElementById('revDetails').value = '';
+  openModal('revisionModal');
+}
+
+async function submitRevision() {
+  if (!_revEntryId) return;
+  const newDue  = document.getElementById('revDue').value;
+  const newComp = document.getElementById('revComp').value;
+  const details = document.getElementById('revDetails').value.trim();
+
+  if (!newDue) { toast('New due date is required'); return; }
+
+  const uid     = _activeUser?.id;
+  const eKey    = 'usr_' + uid + '_' + SK.ENTRIES;
+  const entries = JSON.parse(JSON.stringify(_data[eKey] || []));
+  const idx     = entries.findIndex(e => String(e.id) === String(_revEntryId));
+  if (idx < 0) return;
+
+  const mother = entries[idx];
+  mother.remarks = 'revised';
+
+  // Create child entry
+  const child = {
+    id:              Date.now(),
+    client:          mother.client,
+    taskName:        mother.taskName,
+    output:          mother.output,
+    person:          mother.person,
+    dueDate:         newDue,
+    originalDueDate: mother.dueDate,
+    completionDate:  newComp || '',
+    revisions:       [],
+    remarks:         'revision-done',
+    fromRevision:    mother.id,
+    rootId:          mother.rootId || mother.id,
+    revisionDetails: details,
+  };
+  entries.splice(idx + 1, 0, child);
+
+  const ok = await writeKey(eKey, entries);
+  if (ok) {
+    closeModal('revisionModal');
+    toast('Revision added ✓');
+    renderTracker();
+  }
+}
+
+// ═══════════════════════ REMINDERS & NOTES ═══════════════════════════════
+
+function setNoteFilter(btn, type) {
+  _noteFilter = type;
+  document.querySelectorAll('#noteTypeFilter .stage-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderReminders();
+}
+
+function renderReminders() {
+  const uid  = _activeUser?.id;
+  const nKey = 'usr_' + uid + '_' + SK.NOTES;
+  let notes  = _data[nKey] || [];
+  const td   = today();
+
+  if (_noteFilter) notes = notes.filter(n => n.type === _noteFilter);
+  notes = notes.filter(n => !n.done);
+
+  // Update nav dot
+  const urgent = notes.filter(n => n.type === 'urgent' || (n.due && n.due <= td)).length;
+  document.getElementById('dot-reminders').style.display = urgent ? 'block' : 'none';
+
+  if (!notes.length) {
+    document.getElementById('reminderList').innerHTML = `<div class="empty" style="padding-top:60px">
+      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <div class="empty-title">No reminders yet</div>
+      <div class="empty-sub">Tap + to add a note or reminder</div>
+    </div>`;
+    return;
+  }
+
+  const typeColors = { reminder:'#f59e0b', urgent:'var(--red)', idea:'#8b5cf6', note:'var(--accent)' };
+
+  document.getElementById('reminderList').innerHTML = notes.map(n => {
+    const overdue = n.due && n.due < td;
+    const color   = typeColors[n.type] || 'var(--accent)';
+    const body    = (n.body || '').replace(/<[^>]+>/g,' ').trim();
+    return `<div class="note-card nt-${n.type||'note'}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+        <div class="note-title">${esc(n.title || 'Untitled')}</div>
+        <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill);background:${color}22;color:${color};white-space:nowrap;flex-shrink:0">${n.type||'note'}</span>
+      </div>
+      ${body ? `<div class="note-body">${esc(body.slice(0,200))}${body.length>200?'…':''}</div>` : ''}
+      ${n.due ? `<div class="note-due ${overdue?'overdue':''}">
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        ${overdue ? 'Overdue · ' : ''}${fmtDate(n.due)}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Add note ───────────────────────────────────────────────────────────────
+let _selectedNoteType = 'note';
+function selectNoteType(btn) {
+  _selectedNoteType = btn.dataset.type;
+  document.querySelectorAll('.type-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function openAddNote() {
+  document.getElementById('newNoteTitle').value = '';
+  document.getElementById('newNoteBody').value  = '';
+  document.getElementById('newNoteDue').value   = '';
+  document.getElementById('newNoteAlarm').value = '0';
+  _selectedNoteType = 'note';
+  document.querySelectorAll('.type-pill').forEach(b => b.classList.remove('active'));
+  document.querySelector('.type-pill[data-type="note"]')?.classList.add('active');
+  openModal('addNoteModal');
+  setTimeout(() => document.getElementById('newNoteTitle').focus(), 100);
+}
+
+async function submitAddNote() {
+  const title = document.getElementById('newNoteTitle').value.trim();
+  if (!title) { toast('Title is required'); return; }
+
+  const uid  = _activeUser?.id;
+  const nKey = 'usr_' + uid + '_' + SK.NOTES;
+  const notes = JSON.parse(JSON.stringify(_data[nKey] || []));
+
+  notes.unshift({
+    id:        Date.now(),
+    type:      _selectedNoteType,
+    title,
+    body:      document.getElementById('newNoteBody').value.trim(),
+    due:       document.getElementById('newNoteDue').value || '',
+    alarm:     document.getElementById('newNoteAlarm').value === '1',
+    done:      false,
+    createdAt: Date.now(),
+  });
+
+  const ok = await writeKey(nKey, notes);
+  if (ok) {
+    closeModal('addNoteModal');
+    toast('Note saved ✓');
+    renderReminders();
+  }
+}
+
+// ═══════════════════════ CLIENT PORTAL ══════════════════════════════════
+
+function renderPortal() {
+  const tasks    = (_data[SK.TASKS] || []).filter(t => t.portalStatus === 'awaitingReview' || t.portalStatus === 'awaitingApproval');
+  const projects = _data[SK.PROJECTS] || [];
+
+  document.getElementById('headerTitle').textContent = 'Client Portal';
+
+  if (!tasks.length) {
+    document.getElementById('portalList').innerHTML = `<div class="empty" style="padding-top:60px">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+      <div class="empty-title">Nothing to review</div>
+      <div class="empty-sub">Tasks sent for approval will appear here</div>
+    </div>`;
+    return;
+  }
+
+  document.getElementById('portalList').innerHTML = tasks.map(t => {
+    const proj = projects.find(p => p.id === t.projectId);
+    const projName = proj ? (proj.name || proj.client || '') : '';
+    return `<div class="portal-task">
+      <div class="portal-name">${esc(t.name)}</div>
+      <div class="portal-meta">${projName ? esc(projName) + ' · ' : ''}${t.due ? 'Due: ' + fmtDate(t.due) : ''}</div>
+      <div class="portal-actions">
+        <button class="portal-btn portal-approve" onclick="portalApprove('${t.id}')">✓ Approve</button>
+        <button class="portal-btn portal-revise" onclick="portalRevise('${t.id}')">↩ Request Revision</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function portalApprove(taskId) {
+  if (!confirm('Approve this task? This will notify the team.')) return;
+  const tasks = JSON.parse(JSON.stringify(_data[SK.TASKS] || []));
+  const task  = tasks.find(t => String(t.id) === String(taskId));
+  if (!task) return;
+  task.portalStatus   = 'approved';
+  task.portalActedAt  = Date.now();
+  // Add system comment
+  const comments = JSON.parse(JSON.stringify(_data[SK.COMMENTS] || {}));
+  const key = String(taskId);
+  if (!Array.isArray(comments[key])) comments[key] = [];
+  comments[key].push({ id: Date.now(), author:'✓ Client', text:'✅ Client approved this task.', ts: Date.now(), replies:[], _system:true });
+  await writeKey(SK.TASKS, tasks);
+  await writeKey(SK.COMMENTS, comments);
+  toast('Task approved ✓');
+  renderPortal();
+}
+
+async function portalRevise(taskId) {
+  const note = prompt('Revision notes (optional):');
+  if (note === null) return; // cancelled
+  const tasks = JSON.parse(JSON.stringify(_data[SK.TASKS] || []));
+  const task  = tasks.find(t => String(t.id) === String(taskId));
+  if (!task) return;
+  task.portalStatus      = 'revisionRequested';
+  task.portalActedAt     = Date.now();
+  task.portalRevisionNote= note || '';
+  const comments = JSON.parse(JSON.stringify(_data[SK.COMMENTS] || {}));
+  const key = String(taskId);
+  if (!Array.isArray(comments[key])) comments[key] = [];
+  comments[key].push({ id: Date.now(), author:'↩ Client', text: note ? `↩ Client requested a revision:\n"${note}"` : '↩ Client requested a revision (no notes left).', ts: Date.now(), replies:[], _system:true });
+  await writeKey(SK.TASKS, tasks);
+  await writeKey(SK.COMMENTS, comments);
+  toast('Revision requested');
+  renderPortal();
+}
+
+// ═══════════════════════ PROFILE ════════════════════════════════════════
+
+function showProfile() {
+  const av = document.getElementById('profileAvatar');
+  av.style.background = avatarColor(_activeUser?.name || '');
+  av.textContent = avatarInitial(_activeUser?.name || '');
+  document.getElementById('profileName').textContent = _activeUser?.name || 'Unknown';
+  document.getElementById('profileRole').textContent = getRoleLabel(_activeUser?.role);
+  openModal('profileModal');
+}
+
+function getRoleLabel(role) {
+  const map = { '1':'Admin', '2':'Supervisor', '3':'Staff', '4':'Client' };
+  return map[String(role)] || 'Team Member';
+}
+
+function switchUser() {
+  closeModal('profileModal');
+  // Keep team credentials, just re-select user
+  LS.del('session');
+  _activeUser = null;
+  // Hide main app
+  document.getElementById('mainHeader').style.display = 'none';
+  document.getElementById('bottomNav').style.display  = 'none';
+  document.getElementById('fab').classList.remove('visible');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('loginScreen').classList.add('active');
+  // Skip to user selection
+  if (_data[SK.USERS]?.length) showStepUser();
+}
+
+function logout() {
+  closeModal('profileModal');
+  LS.del('session');
+  LS.del('teamCreds');
+  LS.del('dataCache');
+  _client = null; _activeUser = null; _data = {};
+  if (_realtime) { try { _realtime.unsubscribe(); } catch {} _realtime = null; }
+  location.reload();
+}
+
+// ═══════════════════════ INIT ════════════════════════════════════════════
+// App is initialized via DOMContentLoaded above
+</script>
+</body>
+</html>

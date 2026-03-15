@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="92.16" fill="#0071e3"/>
+  <g transform="translate(256, 256)" stroke="white" stroke-width="25.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Person icon -->
+    <circle cx="0" cy="-76.8" r="61.44"/>
+    <path d="M-92.16 61.44 a92.16 92.16 0 0 1 184.32 0"/>
+    <!-- Down arrow -->
+    <line x1="0" y1="143.36" x2="0" y2="215.04"/>
+    <polyline points="-40.96,184.32 0,225.28 40.96,184.32"/>
+  </g>
+</svg>
