@@ -298,26 +298,13 @@ input,textarea{font-family:inherit}
           <div style="font-weight:700;font-size:var(--font-md)" id="pinUserName"></div>
           <div style="font-size:var(--font-sm);color:var(--muted);margin-top:2px">Enter your PIN</div>
         </div>
-        <div class="pin-dots" id="pinDots">
-          <div class="pin-dot" id="pd0"></div>
-          <div class="pin-dot" id="pd1"></div>
-          <div class="pin-dot" id="pd2"></div>
-          <div class="pin-dot" id="pd3"></div>
+        <div style="margin:0 0 16px">
+          <input class="field-input" id="pinPasswordInput" type="password" placeholder="Enter your password" autocomplete="current-password"
+            onkeydown="if(event.key==='Enter')checkPin()"
+            style="text-align:center;font-size:var(--font-base);letter-spacing:0.1em">
         </div>
-        <div class="pin-grid">
-          <button class="pin-key" onclick="pinKey('1')">1</button>
-          <button class="pin-key" onclick="pinKey('2')">2</button>
-          <button class="pin-key" onclick="pinKey('3')">3</button>
-          <button class="pin-key" onclick="pinKey('4')">4</button>
-          <button class="pin-key" onclick="pinKey('5')">5</button>
-          <button class="pin-key" onclick="pinKey('6')">6</button>
-          <button class="pin-key" onclick="pinKey('7')">7</button>
-          <button class="pin-key" onclick="pinKey('8')">8</button>
-          <button class="pin-key" onclick="pinKey('9')">9</button>
-          <button class="pin-key" onclick="backToUsers()" style="font-size:11px;color:var(--muted)">←</button>
-          <button class="pin-key" onclick="pinKey('0')">0</button>
-          <button class="pin-key del" onclick="pinDel()">⌫</button>
-        </div>
+        <button class="btn-full btn-primary" onclick="checkPin()" style="margin-bottom:10px">Sign In</button>
+        <button class="btn-full btn-secondary" onclick="backToUsers()">← Back</button>
         <div class="error-msg" id="pinError" style="margin-top:12px"></div>
       </div>
     </div>
@@ -793,7 +780,7 @@ function selectUser(uid) {
   document.getElementById('utile-' + uid)?.classList.add('selected');
 
   // Check if user has a PIN set
-  const hasPin = !!_selectedUser.webPin;
+  const hasPin = !!(_selectedUser.password || _selectedUser.webPin);
   if (!hasPin) {
     // No PIN — log in directly
     completeLogin(_selectedUser);
@@ -810,7 +797,9 @@ function showStepPin(user) {
   av.style.background = avatarColor(user.name);
   av.textContent = avatarInitial(user.name);
   document.getElementById('pinUserName').textContent = user.name;
-  updatePinDots();
+  // Clear and focus password input
+  const inp = document.getElementById('pinPasswordInput');
+  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 100); }
 }
 
 function pinKey(k) {
@@ -827,13 +816,16 @@ function updatePinDots() {
   }
 }
 function checkPin() {
-  const errEl = document.getElementById('pinError');
-  if (_pinBuffer === String(_selectedUser.webPin)) {
+  const errEl  = document.getElementById('pinError');
+  const input  = document.getElementById('pinPasswordInput');
+  const entered = input ? input.value : _pinBuffer;
+  const correct = _selectedUser.password || _selectedUser.webPin || '';
+  if (entered === String(correct)) {
     completeLogin(_selectedUser);
   } else {
-    errEl.textContent = 'Incorrect PIN. Try again.';
+    errEl.textContent = 'Incorrect password. Try again.';
+    if (input) { input.value = ''; input.focus(); }
     _pinBuffer = '';
-    updatePinDots();
     setTimeout(() => { errEl.textContent = ''; }, 2000);
   }
 }
