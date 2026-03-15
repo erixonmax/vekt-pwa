@@ -1,7 +1,7 @@
 // vekt PWA Service Worker v4
 // index.html is NEVER cached — always fetched fresh from network
 
-const CACHE_NAME = 'vekt-pwa-v4';
+const CACHE_NAME = 'vekt-pwa-v5';
 const STATIC_FILES = [
   '/vekt-pwa/manifest.json',
   '/vekt-pwa/icon-192.svg',
