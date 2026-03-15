@@ -2,7 +2,7 @@
 // Caches app shell for offline use
 // Data is cached in IndexedDB by the app itself
 
-const CACHE_NAME = 'vekt-pwa-v1';
+const CACHE_NAME = 'vekt-pwa-v3';
 const SHELL_FILES = [
   '/vekt-pwa/',
   '/vekt-pwa/index.html',
