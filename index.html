@@ -348,6 +348,59 @@ input,textarea{font-family:inherit}
     <button onclick="dismissInstall()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;padding:0 0 0 4px">✕</button>
   </div>
 
+  <!-- Install Instructions Sheet (iOS/Android manual) -->
+  <div id="installSheet" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.5);align-items:flex-end">
+    <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;padding:24px 20px calc(24px + env(safe-area-inset-bottom));max-height:85vh;overflow-y:auto">
+      <div style="width:36px;height:4px;background:#d2d2d7;border-radius:2px;margin:0 auto 20px"></div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px">Install vekt</div>
+      <div style="font-size:13px;color:#6e6e73;margin-bottom:20px">Add to your home screen for the best experience</div>
+      <!-- Tab switcher -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button id="sheetTabIos" onclick="switchSheetTab('ios')" style="flex:1;padding:8px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🍎 iPhone / iPad</button>
+        <button id="sheetTabAndroid" onclick="switchSheetTab('android')" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid #d2d2d7;background:#f5f5f7;color:#1d1d1f;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🤖 Android</button>
+      </div>
+      <!-- iOS instructions -->
+      <div id="sheetIos" style="font-size:14px;color:#1d1d1f;line-height:2">
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f7">
+          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">1</div>
+          <div>Open this page in <strong>Safari</strong> (not Chrome)</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f7">
+          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">2</div>
+          <div>Tap the <strong>Share</strong> button <span style="font-size:18px">⎋</span> at the bottom of Safari</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f7">
+          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">3</div>
+          <div>Scroll down and tap <strong>Add to Home Screen</strong></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">4</div>
+          <div>Tap <strong>Add</strong> — the vekt icon appears on your home screen</div>
+        </div>
+      </div>
+      <!-- Android instructions -->
+      <div id="sheetAndroid" style="display:none;font-size:14px;color:#1d1d1f;line-height:2">
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f7">
+          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">1</div>
+          <div>Open this page in <strong>Chrome</strong></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f7">
+          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">2</div>
+          <div>Tap the <strong>⋮ menu</strong> in the top right</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f7">
+          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">3</div>
+          <div>Tap <strong>Add to Home screen</strong> or <strong>Install app</strong></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">4</div>
+          <div>Tap <strong>Install</strong> — the vekt icon appears on your home screen</div>
+        </div>
+      </div>
+      <button onclick="closeInstallSheet()" style="width:100%;margin-top:20px;padding:14px;border-radius:12px;border:none;background:#f5f5f7;color:#1d1d1f;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Done</button>
+    </div>
+  </div>
+
   <!-- ════════ LOGIN SCREEN ════════ -->
   <div class="screen active" id="loginScreen">
     <div style="flex:1;overflow-y:auto;padding:32px 24px">
@@ -1005,6 +1058,7 @@ function completeLogin(user) {
   const creds = LS.get('teamCreds') || {};
   LS.set('session', { ...creds, user });
   showApp();
+  setTimeout(_maybeShowInstallBanner, 1500);
 }
 
 function backToCode() {
@@ -1989,43 +2043,67 @@ if (window.visualViewport) {
   });
 }
 
-// ── PWA Install Prompt ───────────────────────────────────────────────────────
+// ── PWA Install ───────────────────────────────────────────────────────────────
 let _installPrompt = null;
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   _installPrompt = e;
-  // Show install banner if not previously dismissed
-  if (!localStorage.getItem('vekt_install_dismissed')) {
-    const banner = document.getElementById('installBanner');
-    if (banner) banner.style.display = 'flex';
-  }
 });
 
-window.addEventListener('appinstalled', () => {
-  const banner = document.getElementById('installBanner');
-  if (banner) banner.style.display = 'none';
-  _installPrompt = null;
-});
+window.addEventListener('appinstalled', () => { _installPrompt = null; });
 
 function installApp() {
   if (_installPrompt) {
+    // Android Chrome native prompt available
     _installPrompt.prompt();
-    _installPrompt.userChoice.then(() => {
-      _installPrompt = null;
-      const banner = document.getElementById('installBanner');
-      if (banner) banner.style.display = 'none';
-    });
+    _installPrompt.userChoice.then(() => { _installPrompt = null; });
   } else {
-    // iOS fallback — show instructions
-    alert('To install on iPhone/iPad:\n1. Tap the Share button (□↑) in Safari\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add"');
+    // Show manual instructions sheet
+    showInstallSheet();
   }
+}
+
+function showInstallSheet() {
+  const sheet = document.getElementById('installSheet');
+  if (sheet) { sheet.style.display = 'flex'; }
+}
+
+function closeInstallSheet() {
+  const sheet = document.getElementById('installSheet');
+  if (sheet) { sheet.style.display = 'none'; }
+  localStorage.setItem('vekt_install_dismissed', '1');
+  const banner = document.getElementById('installBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+function switchSheetTab(tab) {
+  document.getElementById('sheetIos').style.display     = tab === 'ios'     ? 'block' : 'none';
+  document.getElementById('sheetAndroid').style.display = tab === 'android' ? 'block' : 'none';
+  document.getElementById('sheetTabIos').style.background     = tab === 'ios'     ? 'var(--accent)' : '#f5f5f7';
+  document.getElementById('sheetTabIos').style.color          = tab === 'ios'     ? '#fff' : '#1d1d1f';
+  document.getElementById('sheetTabIos').style.border         = tab === 'ios'     ? 'none' : '1.5px solid #d2d2d7';
+  document.getElementById('sheetTabAndroid').style.background = tab === 'android' ? 'var(--accent)' : '#f5f5f7';
+  document.getElementById('sheetTabAndroid').style.color      = tab === 'android' ? '#fff' : '#1d1d1f';
+  document.getElementById('sheetTabAndroid').style.border     = tab === 'android' ? 'none' : '1.5px solid #d2d2d7';
+  // Auto-detect platform
+  const isAndroid = /android/i.test(navigator.userAgent);
+  if (tab === 'auto') switchSheetTab(isAndroid ? 'android' : 'ios');
 }
 
 function dismissInstall() {
   localStorage.setItem('vekt_install_dismissed', '1');
   const banner = document.getElementById('installBanner');
   if (banner) banner.style.display = 'none';
+}
+
+// Show install banner after login (not on first load)
+function _maybeShowInstallBanner() {
+  if (localStorage.getItem('vekt_install_dismissed')) return;
+  // Only show if not already installed as PWA
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  const banner = document.getElementById('installBanner');
+  if (banner) banner.style.display = 'flex';
 }
 
 // ── Force project navigation fix ────────────────────────────────────────────
