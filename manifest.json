@@ -1,7 +1,7 @@
 {
   "name": "vekt",
   "short_name": "vekt",
-  "description": "Project and time tracking for small teams",
+  "description": "Project tracking for teams",
   "start_url": "/vekt-pwa/",
   "display": "standalone",
   "background_color": "#7c3aed",
@@ -9,32 +9,29 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-192.svg",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.svg",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-192.svg",
+      "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "icon-512.svg",
+      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
-  "categories": [
-    "productivity",
-    "business"
-  ]
+  "categories": ["productivity", "business"]
 }

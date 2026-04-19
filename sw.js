@@ -1,11 +1,10 @@
-// vekt PWA Service Worker v4
-// index.html is NEVER cached — always fetched fresh from network
-
-const CACHE_NAME = 'vekt-pwa-v5';
+// vekt PWA Service Worker v6
+const CACHE_NAME = 'vekt-pwa-v6';
 const STATIC_FILES = [
   '/vekt-pwa/manifest.json',
-  '/vekt-pwa/icon-192.svg',
-  '/vekt-pwa/icon-512.svg',
+  '/vekt-pwa/icon-192.png',
+  '/vekt-pwa/icon-512.png',
+  '/vekt-pwa/apple-touch-icon.png',
 ];
 
 self.addEventListener('install', e => {
@@ -26,17 +25,11 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-
-  // NEVER cache index.html — always fetch fresh
   if (url.pathname.endsWith('/') || url.pathname.endsWith('index.html')) {
     e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request)));
     return;
   }
-
-  // Skip non-same-origin (Supabase API calls etc)
   if (url.origin !== self.location.origin) return;
-
-  // Cache first for static assets only
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
