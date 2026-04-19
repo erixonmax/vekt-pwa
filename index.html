@@ -847,12 +847,32 @@ function updatePinDots() {
     if (d) d.classList.toggle('filled', i < _pinBuffer.length);
   }
 }
-function checkPin() {
-  const errEl  = document.getElementById('pinError');
-  const input  = document.getElementById('pinPasswordInput');
-  const entered = input ? input.value : _pinBuffer;
-  const correct = _selectedUser.password || _selectedUser.webPin || '';
-  if (entered === String(correct)) {
+async function hashPassword(plain) {
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(plain));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  } catch { return plain; }
+}
+function isHashed(pw) { return typeof pw === 'string' && /^[0-9a-f]{64}$/.test(pw); }
+
+async function checkPin() {
+  const errEl   = document.getElementById('pinError');
+  const input   = document.getElementById('pinPasswordInput');
+  const entered = (input ? input.value : _pinBuffer) || '';
+  const stored  = _selectedUser.webPin || _selectedUser.password || '';
+
+  // No password set — let them in directly
+  if (!stored) { completeLogin(_selectedUser); return; }
+
+  let matched = false;
+  if (!isHashed(stored)) {
+    matched = (entered === stored);
+  } else {
+    const hashed = await hashPassword(entered);
+    matched = (hashed === stored);
+  }
+
+  if (matched) {
     completeLogin(_selectedUser);
   } else {
     errEl.textContent = 'Incorrect password. Try again.';
@@ -887,23 +907,27 @@ function backToPin() {
   document.getElementById('stepPin').style.display      = 'block';
 }
 
-function tryRecovery() {
+async function tryRecovery() {
   const entered = document.getElementById('recoveryPin').value;
   const errEl   = document.getElementById('recoveryError');
   errEl.textContent = '';
 
-  // Check against admin override key stored in settings or any admin user's password
   const users    = _data[SK.USERS] || [];
   const settings = _data[SK.SETTINGS] || {};
   const adminOverride = settings.webAdminPin || settings.adminPin || null;
+  const admins = users.filter(u => String(u.role) === '1' || String(u.roleId) === 'tier1');
 
-  // Allow if: matches adminOverride, OR matches any tier-1 user's password
-  const admins = users.filter(u => String(u.role) === '1' || String(u.tier) === '1');
-  const matchesAdmin = admins.some(a => entered && entered === String(a.password || a.webPin || ''));
-  const matchesOverride = adminOverride && entered === String(adminOverride);
+  async function matches(stored, plain) {
+    if (!stored || !plain) return false;
+    if (!isHashed(stored)) return plain === stored;
+    return (await hashPassword(plain)) === stored;
+  }
+
+  const adminChecks = await Promise.all(admins.map(a => matches(a.password || a.webPin || '', entered)));
+  const matchesAdmin = adminChecks.some(Boolean);
+  const matchesOverride = adminOverride ? await matches(adminOverride, entered) : false;
 
   if (matchesAdmin || matchesOverride) {
-    // Log in the selected user bypassing their own PIN
     completeLogin(_selectedUser);
   } else if (!entered) {
     errEl.textContent = 'Enter an admin PIN to unlock.';
