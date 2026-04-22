@@ -307,6 +307,10 @@ input,textarea,select{font-family:inherit}
 }
 .modal-overlay.open .modal-sheet{transform:translateY(0)}
 .modal-handle{width:38px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 18px}
+.confirm-task-name{font-size:var(--font-sm);color:var(--muted);margin:-12px 0 20px;line-height:1.4;word-break:break-word}
+.confirm-actions{display:flex;flex-direction:column;gap:10px}
+.confirm-btn-done{width:100%;padding:15px;border-radius:var(--radius-sm);border:none;background:var(--accent);color:#fff;font-size:var(--font-base);font-weight:700;cursor:pointer;letter-spacing:-0.2px}
+.confirm-btn-cancel{width:100%;padding:14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:var(--font-base);font-weight:600;cursor:pointer}
 .modal-title{font-size:var(--font-md);font-weight:800;margin-bottom:20px;letter-spacing:-0.3px}
 .form-field{margin-bottom:16px}
 .form-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;display:block}
@@ -428,6 +432,19 @@ input,textarea,select{font-family:inherit}
 
 <!-- Toast -->
 <div id="toastEl"></div>
+
+<!-- Task Done Confirm Sheet -->
+<div class="modal-overlay" id="confirmDoneOverlay" onclick="if(event.target===this)_confirmDoneResolve(false)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Mark as Done?</div>
+    <div class="confirm-task-name" id="confirmDoneTaskName"></div>
+    <div class="confirm-actions">
+      <button class="confirm-btn-done" onclick="_confirmDoneResolve(true)">✓ Mark as Done</button>
+      <button class="confirm-btn-cancel" onclick="_confirmDoneResolve(false)">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <!-- FAB -->
 <button class="fab" id="fab" onclick="fabAction()">
@@ -1455,6 +1472,19 @@ function getDueLabel(t) {
 
 // ═══════════════════════ MARK DONE ═══════════════════════════════════════
 
+let _confirmDoneResolve = null;
+function confirmDone(taskName) {
+  return new Promise(resolve => {
+    _confirmDoneResolve = (result) => {
+      document.getElementById('confirmDoneOverlay').classList.remove('open');
+      _confirmDoneResolve = null;
+      resolve(result);
+    };
+    document.getElementById('confirmDoneTaskName').textContent = taskName;
+    document.getElementById('confirmDoneOverlay').classList.add('open');
+  });
+}
+
 async function toggleDone(taskId) {
   if (_offline) { toast('Cannot update tasks while offline'); return; }
   const tasks = JSON.parse(JSON.stringify(_data[SK.TASKS] || []));
@@ -1462,7 +1492,7 @@ async function toggleDone(taskId) {
   if (!task) return;
 
   // Confirm before marking done to prevent accidental taps
-  if (!task.done && !confirm(`Mark "${task.name}" as done?`)) return;
+  if (!task.done && !await confirmDone(task.name)) return;
 
   const wasDone = task.done;
   task.done = !wasDone;
