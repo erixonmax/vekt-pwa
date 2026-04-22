@@ -135,7 +135,7 @@ input,textarea,select{font-family:inherit}
 
 /* ── Login screen ─────────────────────────────────────────────────── */
 #loginScreen{background:var(--white);justify-content:center;padding:40px 28px;gap:0}
-.login-logo{width:72px;height:72px;background:var(--accent);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 8px 24px rgba(109,40,217,0.3)}
+.login-logo{width:72px;height:72px;background:var(--white);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:1.5px solid var(--border)}
 .login-logo svg{width:38px;height:38px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .login-title{font-size:28px;font-weight:800;text-align:center;margin-bottom:6px;letter-spacing:-0.5px}
 .login-sub{font-size:var(--font-sm);color:var(--muted);text-align:center;margin-bottom:36px;line-height:1.5}
@@ -862,6 +862,7 @@ input,textarea,select{font-family:inherit}
 const RELAY_URL = 'https://kpwsetzamovpgkiwsuno.supabase.co';
 const RELAY_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtwd3NldHphbW92cGdraXdzdW5vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0NjkzMjYsImV4cCI6MjA4OTA0NTMyNn0.uyiUYh9vx5CdB2CrdNa4fmwReRv4HJNV2CftSmUwPXM';
 const TABLE     = 'vekt_sync';
+const VAPID_PUBLIC_KEY = 'BK-gl2gwx0lC4clzqQ1WrPDHh-wtqaDhwUBDHX5SOewLjy0RcvAS9BwCPebgTojLTx0THxdJq0Nz9O5plye42uc';
 
 const SK = {
   USERS:    'wlt_users_v1',
@@ -1158,6 +1159,7 @@ function completeLogin(user) {
   LS.set('session', { ...creds, user });
   showApp();
   setTimeout(_maybeShowInstallBanner, 1500);
+  setTimeout(setupPushNotifications, 2000);
 }
 
 function backToCode() {
@@ -2245,6 +2247,41 @@ window.openProject = function(projId) {
   if (tabEl) tabEl.classList.add('active');
   renderProjectDetail();
 };
+
+// ── Push Notifications ───────────────────────────────────────────────────────
+async function setupPushNotifications() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator) || !_client || !_activeUser) return;
+  if (Notification.permission === 'denied') return;
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    const sub = existing || await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    // Save subscription to Supabase
+    await _client.from('push_subscriptions').upsert({
+      workspace_id: _workspaceId,
+      user_id: _activeUser.id,
+      subscription: sub.toJSON()
+    }, { onConflict: 'workspace_id,user_id' });
+
+  } catch(e) {
+    console.warn('Push setup failed:', e);
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
 
 // ── Mobile keyboard handling ─────────────────────────────────────────────────
 // When keyboard opens on mobile, scroll focused input into view

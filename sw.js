@@ -1,5 +1,5 @@
-// vekt PWA Service Worker v6
-const CACHE_NAME = 'vekt-pwa-v6';
+// vekt PWA Service Worker v7
+const CACHE_NAME = 'vekt-pwa-v7';
 const STATIC_FILES = [
   '/vekt-pwa/manifest.json',
   '/vekt-pwa/icon-192.png',
@@ -39,6 +39,34 @@ self.addEventListener('fetch', e => {
         }
         return response;
       });
+    })
+  );
+});
+
+// ── Push notification handler ─────────────────────────────────────────────
+self.addEventListener('push', e => {
+  let data = { title: 'vekt', body: 'You have a reminder.' };
+  try { data = e.data ? e.data.json() : data; } catch {}
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/vekt-pwa/icon-192.png',
+      badge: '/vekt-pwa/icon-192.png',
+      vibrate: [200, 100, 200],
+      tag: 'vekt-reminder',
+      renotify: true,
+    })
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if (c.url.includes('vekt-pwa') && 'focus' in c) return c.focus();
+      }
+      return clients.openWindow('/vekt-pwa/');
     })
   );
 });
