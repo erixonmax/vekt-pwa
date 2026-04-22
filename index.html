@@ -69,11 +69,22 @@ input,textarea,select{font-family:inherit}
 }
 .nav-btn.active{color:var(--accent)}
 .nav-btn svg{
-  width:23px;height:23px;stroke:currentColor;fill:none;
-  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;
-  transition:transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+  width:24px;height:24px;stroke:currentColor;fill:none;
+  stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  position:relative;z-index:1;
 }
-.nav-btn.active svg{transform:scale(1.1)}
+.nav-btn.active svg{transform:scale(1.08)}
+/* Active pill behind icon */
+.nav-btn::before{
+  content:'';position:absolute;top:6px;left:50%;
+  transform:translateX(-50%) scaleX(0);
+  width:52px;height:32px;border-radius:var(--radius-pill);
+  background:var(--accent-light);
+  transition:transform 0.22s cubic-bezier(0.34,1.56,0.64,1),opacity 0.15s;
+  opacity:0;
+}
+.nav-btn.active::before{transform:translateX(-50%) scaleX(1);opacity:1}
 .nav-dot{
   position:absolute;top:7px;right:calc(50% - 15px);
   width:8px;height:8px;border-radius:50%;background:var(--red);
@@ -81,7 +92,7 @@ input,textarea,select{font-family:inherit}
 }
 
 /* ── Scroll ────────────────────────────────────────────────────────── */
-.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px calc(12px + var(--safe-bot))}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px calc(84px + var(--safe-bot))}
 .scroll-no-pad{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
 /* ── Section headers (iOS grouped style) ─────────────────────────── */
@@ -96,7 +107,26 @@ input,textarea,select{font-family:inherit}
 .card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
 .card-sm{background:var(--white);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow)}
 
-/* ── Task cards ───────────────────────────────────────────────────── */
+/* ── Task card swipe-to-complete ──────────────────────────────────── */
+.task-swipe-wrap{position:relative;overflow:hidden;border-radius:var(--radius-sm);margin-bottom:8px}
+.task-swipe-bg{
+  position:absolute;inset:0;border-radius:var(--radius-sm);
+  background:var(--green);display:flex;align-items:center;padding-left:20px;
+  opacity:0;transition:opacity 0.1s;
+}
+.task-swipe-bg svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.task-swipe-bg .swipe-label{color:#fff;font-size:var(--font-sm);font-weight:700;margin-left:8px}
+.task-swipe-wrap .task-card{
+  margin-bottom:0;
+  transform:translateX(0);
+  transition:transform 0.22s cubic-bezier(0.25,1,0.5,1);
+  will-change:transform;
+}
+.task-swipe-wrap.swiping .task-card{transition:none}
+.task-swipe-wrap.swipe-confirm .task-card{transform:translateX(100%);transition:transform 0.28s cubic-bezier(0.4,0,0.2,1);opacity:0}
+.task-swipe-wrap.swipe-confirm .task-swipe-bg{opacity:1}
+
+
 .task-card{
   background:var(--white);border-radius:var(--radius-sm);
   padding:13px 14px;margin-bottom:8px;
@@ -125,10 +155,10 @@ input,textarea,select{font-family:inherit}
 .badge-stage{background:var(--bg);color:var(--muted);border:1px solid var(--border)}
 .task-actions{display:flex;gap:6px;margin-top:9px}
 .task-btn{
-  font-size:11px;font-weight:600;padding:5px 12px;
+  font-size:11px;font-weight:600;padding:8px 14px;
   border-radius:var(--radius-pill);border:1.5px solid var(--border);
   background:none;color:var(--muted);display:flex;align-items:center;gap:4px;
-  -webkit-tap-highlight-color:transparent;
+  -webkit-tap-highlight-color:transparent;min-height:36px;
 }
 .task-btn.primary{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
 .task-btn.done-btn{border-color:var(--green);color:var(--green-dark);background:var(--green-light)}
@@ -414,7 +444,7 @@ input,textarea,select{font-family:inherit}
   -webkit-appearance:none;box-shadow:var(--shadow);color:var(--text);
 }
 .search-input:focus{box-shadow:0 0 0 2px var(--accent-light),var(--shadow)}
-.back-btn{background:none;border:none;color:var(--accent);display:flex;align-items:center;gap:3px;font-size:var(--font-base);font-weight:600;padding:0;cursor:pointer;letter-spacing:-0.1px}
+.back-btn{background:none;border:none;color:var(--accent);display:flex;align-items:center;gap:3px;font-size:var(--font-base);font-weight:600;padding:10px 4px 10px 0;cursor:pointer;letter-spacing:-0.1px;min-height:44px}
 .pill-wrap{display:flex;flex-wrap:wrap;gap:5px}
 
 /* ── Offline banner ────────────────────────────────────────────────── */
@@ -602,7 +632,7 @@ input,textarea,select{font-family:inherit}
       <div class="header-sub" id="headerSub"></div>
     </div>
     <button class="header-action" id="headerAction" style="display:none" onclick="headerActionFn()"></button>
-    <div id="headerAvatar" onclick="showProfile()" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--font-sm);color:#fff;cursor:pointer;flex-shrink:0"></div>
+    <div id="headerAvatar" onclick="showProfile()" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--font-sm);color:#fff;cursor:pointer;flex-shrink:0;padding:4px;margin:-4px;box-sizing:content-box"></div>
   </div>
 
   <!-- TODAY TAB -->
@@ -1441,22 +1471,28 @@ function renderTaskCard(t, badgeClass) {
   const comments = (_data[SK.COMMENTS] || {})[String(t.id)] || [];
   const commentCount = Array.isArray(comments) ? comments.length : 0;
 
-  return `<div class="task-card ${t.done ? 'done-card' : ''}" id="tc-${t.id}">
-    <div class="task-check ${t.done ? 'checked' : ''}" onclick="toggleDone('${t.id}')">
+  return `<div class="task-swipe-wrap" id="sw-${t.id}" ${t.done ? '' : `ontouchstart="swipeStart(event,'${t.id}')" ontouchmove="swipeMove(event,'${t.id}')" ontouchend="swipeEnd(event,'${t.id}')"`}>
+    <div class="task-swipe-bg">
       <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      <span class="swipe-label">Done</span>
     </div>
-    <div class="task-body">
-      <div class="task-name">${esc(t.name)}</div>
-      <div class="task-meta">
-        ${badgeClass ? `<span class="task-badge ${badgeClass}">${getDueLabel(t)}</span>` : ''}
-        ${projName ? `<span class="task-badge badge-project">${esc(projName)}</span>` : ''}
-        ${t.person ? `<span class="task-badge badge-person">${esc(t.person)}</span>` : ''}
+    <div class="task-card ${t.done ? 'done-card' : ''}" id="tc-${t.id}">
+      <div class="task-check ${t.done ? 'checked' : ''}" onclick="toggleDone('${t.id}')">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <div class="task-actions">
-        <button class="task-btn" onclick="openTaskDetail('${t.id}')">
-          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          Comments${commentCount ? ' ('+commentCount+')' : ''}
-        </button>
+      <div class="task-body">
+        <div class="task-name">${esc(t.name)}</div>
+        <div class="task-meta">
+          ${badgeClass ? `<span class="task-badge ${badgeClass}">${getDueLabel(t)}</span>` : ''}
+          ${projName ? `<span class="task-badge badge-project">${esc(projName)}</span>` : ''}
+          ${t.person ? `<span class="task-badge badge-person">${esc(t.person)}</span>` : ''}
+        </div>
+        <div class="task-actions">
+          <button class="task-btn" onclick="openTaskDetail('${t.id}')">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Comments${commentCount ? ' ('+commentCount+')' : ''}
+          </button>
+        </div>
       </div>
     </div>
   </div>`;
@@ -1471,6 +1507,68 @@ function getDueLabel(t) {
 }
 
 // ═══════════════════════ MARK DONE ═══════════════════════════════════════
+
+// ═══════════════════════ HAPTIC ══════════════════════════════════════════
+function haptic(ms = 10) {
+  try { if (navigator.vibrate) navigator.vibrate(ms); } catch(e) {}
+}
+
+// ═══════════════════════ SWIPE TO COMPLETE ═══════════════════════════════
+const _swipe = {};
+const SWIPE_THRESHOLD = 72; // px to trigger confirm
+
+function swipeStart(e, taskId) {
+  const touch = e.touches[0];
+  _swipe[taskId] = { startX: touch.clientX, startY: touch.clientY, dx: 0, active: true };
+  const wrap = document.getElementById('sw-' + taskId);
+  if (wrap) wrap.classList.add('swiping');
+}
+
+function swipeMove(e, taskId) {
+  const s = _swipe[taskId];
+  if (!s || !s.active) return;
+  const touch = e.touches[0];
+  const dx = touch.clientX - s.startX;
+  const dy = touch.clientY - s.startY;
+  // Cancel if vertical scroll dominates
+  if (Math.abs(dy) > Math.abs(dx) && Math.abs(dx) < 10) { s.active = false; return; }
+  if (dx <= 0) return;
+  s.dx = dx;
+  const wrap = document.getElementById('sw-' + taskId);
+  if (!wrap) return;
+  const card = wrap.querySelector('.task-card');
+  const bg = wrap.querySelector('.task-swipe-bg');
+  const progress = Math.min(dx / SWIPE_THRESHOLD, 1);
+  if (card) card.style.transform = `translateX(${Math.min(dx, SWIPE_THRESHOLD * 1.4)}px)`;
+  if (bg) bg.style.opacity = progress;
+  if (progress >= 1 && !s.triggered) {
+    s.triggered = true;
+    haptic(12);
+  }
+  if (dx > 8) e.preventDefault(); // prevent scroll while swiping
+}
+
+function swipeEnd(e, taskId) {
+  const s = _swipe[taskId];
+  if (!s) return;
+  const wrap = document.getElementById('sw-' + taskId);
+  if (wrap) wrap.classList.remove('swiping');
+  if (s.active && s.dx >= SWIPE_THRESHOLD) {
+    // Confirmed — animate out then trigger done
+    if (wrap) {
+      wrap.classList.add('swipe-confirm');
+      haptic(20);
+      setTimeout(() => toggleDone(taskId), 280);
+    }
+  } else {
+    // Snap back
+    const card = wrap ? wrap.querySelector('.task-card') : null;
+    const bg = wrap ? wrap.querySelector('.task-swipe-bg') : null;
+    if (card) card.style.transform = '';
+    if (bg) bg.style.opacity = '';
+  }
+  delete _swipe[taskId];
+}
 
 let _confirmDoneResolve = null;
 function confirmDone(taskName) {
@@ -1526,6 +1624,7 @@ async function toggleDone(taskId) {
       }
     }
     toast('Task done ✓ — entry added to Tracker');
+    haptic([10, 30, 10]);
   } else {
     toast('Task unmarked');
   }
