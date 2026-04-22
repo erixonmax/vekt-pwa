@@ -4,8 +4,8 @@
   "description": "Project tracking for teams",
   "start_url": "/vekt-pwa/",
   "display": "standalone",
-  "background_color": "#7c3aed",
-  "theme_color": "#7c3aed",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait",
   "icons": [
     {
