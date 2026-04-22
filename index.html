@@ -1461,6 +1461,9 @@ async function toggleDone(taskId) {
   const task  = tasks.find(t => String(t.id) === String(taskId));
   if (!task) return;
 
+  // Confirm before marking done to prevent accidental taps
+  if (!task.done && !confirm(`Mark "${task.name}" as done?`)) return;
+
   const wasDone = task.done;
   task.done = !wasDone;
 
