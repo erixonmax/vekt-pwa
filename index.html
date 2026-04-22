@@ -650,15 +650,15 @@ input,textarea,select{font-family:inherit}
       <div class="today-greeting" id="todayGreeting"></div>
       <div class="today-date" id="todayDate"></div>
       <div class="stat-row">
-        <div class="stat-card">
+        <div class="stat-card" onclick="scrollToSection('sec-overdue')" style="cursor:pointer">
           <div class="stat-num" id="statOverdue" style="color:var(--red)">0</div>
           <div class="stat-lbl">Overdue</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" onclick="scrollToSection('sec-today')" style="cursor:pointer">
           <div class="stat-num" id="statToday" style="color:var(--orange)">0</div>
           <div class="stat-lbl">Due Today</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" onclick="scrollToSection('sec-soon')" style="cursor:pointer">
           <div class="stat-num" id="statSoon" style="color:var(--accent)">0</div>
           <div class="stat-lbl">Upcoming</div>
         </div>
@@ -1443,6 +1443,20 @@ function fabAction() {
 
 // ═══════════════════════ TODAY ════════════════════════════════════════════
 
+function scrollToSection(sectionId) {
+  const el = document.getElementById(sectionId);
+  if (!el) return;
+  const scroll = document.getElementById('todayScroll');
+  if (scroll) {
+    // Offset for scroll container
+    const elTop  = el.offsetTop;
+    scroll.scrollTo({ top: elTop - 16, behavior: 'smooth' });
+  }
+  // Flash highlight the section label
+  el.classList.add('section-flash');
+  setTimeout(() => el.classList.remove('section-flash'), 1000);
+}
+
 function renderToday() {
   const td    = today();
   const tasks = (_data[SK.TASKS] || []).filter(t => !t.done && t.due);
@@ -1481,8 +1495,10 @@ function renderToday() {
   // Update nav dot
   document.getElementById('dot-today').style.display = overdue.length ? 'block' : 'none';
 
+  // Build section IDs for scroll-to from stat cards
+  const sectionIds = { 'Overdue': 'sec-overdue', 'Due Today': 'sec-today', 'Upcoming (7 days)': 'sec-soon' };
   document.getElementById('todayTasks').innerHTML = sections.map(sec => `
-    <div class="section-label">${sec.label}</div>
+    <div class="section-label" id="${sectionIds[sec.label] || ''}">${sec.label}</div>
     ${sec.tasks.map(t => renderTaskCard(t, sec.badgeClass)).join('')}
   `).join('');
 }

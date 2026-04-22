@@ -338,3 +338,9 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 /* ── Slide-up entry animation */
 @keyframes vektSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .task-card:not(.done-card),.proj-group,.entry-card,.note-card,.stat-card,.portal-task{animation:vektSlideUp 0.24s ease both}
+
+/* ── Stat card tap + section scroll ───────────────────────────── */
+.stat-card{transition:transform 0.12s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.12s!important}
+.stat-card:active{transform:scale(0.94)!important;box-shadow:var(--shadow)!important}
+@keyframes sectionFlash{0%,100%{color:var(--muted);background:transparent}40%{color:var(--accent);background:var(--accent-light)}}
+.section-flash{animation:sectionFlash 0.9s ease;border-radius:4px;padding:2px 4px!important}
