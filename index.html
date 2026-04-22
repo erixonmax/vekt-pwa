@@ -465,6 +465,17 @@ input,textarea,select{font-family:inherit}
 <div id="toastEl"></div>
 
 <!-- Task Done Confirm Sheet -->
+<div class="modal-overlay" id="confirmNoteDoneOverlay" onclick="if(event.target===this)_confirmNoteDoneResolve(false)">
+  <div class="confirm-sheet">
+    <div style="font-size:13px;font-weight:500;color:var(--muted);margin-bottom:6px">Mark note as done?</div>
+    <div class="confirm-task-name" id="confirmNoteDoneTitle"></div>
+    <div class="confirm-actions">
+      <button class="confirm-btn-done" onclick="_confirmNoteDoneResolve(true)">✓ Mark as Done</button>
+      <button class="confirm-btn-cancel" onclick="_confirmNoteDoneResolve(false)">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="confirmDoneOverlay" onclick="if(event.target===this)_confirmDoneResolve(false)">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -1771,8 +1782,13 @@ async function toggleDone(taskId) {
     const clientName = proj ? (proj.name || proj.client || '') : '';
     if (clientName) {
       const uid = _activeUser.id;
-      const entriesKey = 'usr_' + uid + '_' + SK.ENTRIES;
-      const entries = JSON.parse(JSON.stringify(_data[entriesKey] || []));
+      const entriesKey  = 'usr_' + uid + '_' + SK.ENTRIES;
+      const entriesKeyV5t = 'usr_' + uid + '_wlt_entries_v5';
+      const _ev4 = JSON.parse(JSON.stringify(_data[entriesKey]    || []));
+      const _ev5 = JSON.parse(JSON.stringify(_data[entriesKeyV5t] || []));
+      const _eIds = new Set(_ev4.map(e => String(e.id)));
+      _ev5.forEach(e => { if (!_eIds.has(String(e.id))) _ev4.push(e); });
+      const entries = _ev4;
       const alreadyLogged = entries.some(e => e.fromTask === task.id);
       if (!alreadyLogged) {
         const td = today();
@@ -2084,8 +2100,15 @@ function autoGrow(el) {
 
 function renderTracker() {
   const uid   = _activeUser?.id;
-  const entriesKey = 'usr_' + uid + '_' + SK.ENTRIES;
-  let entries = _data[entriesKey] || [];
+  const entriesKey  = 'usr_' + uid + '_' + SK.ENTRIES;
+  const entriesKeyV5 = 'usr_' + uid + '_wlt_entries_v5';
+  // Merge v4 + v5, dedup by id — desktop may write to either key depending on build
+  const v4 = _data[entriesKey]  || [];
+  const v5 = _data[entriesKeyV5] || [];
+  const merged = [...v4];
+  const seenIds = new Set(v4.map(e => String(e.id)));
+  v5.forEach(e => { if (!seenIds.has(String(e.id))) merged.push(e); });
+  let entries = merged;
   const q     = (document.getElementById('trackerSearch')?.value || '').toLowerCase();
 
   if (q) entries = entries.filter(e =>
@@ -2221,6 +2244,50 @@ async function submitRevision() {
 
 // ═══════════════════════ REMINDERS & NOTES ═══════════════════════════════
 
+// ── Confirm note done overlay ─────────────────────────────────────────────
+let _confirmNoteDoneResolve = null;
+function confirmNoteDone(title) {
+  return new Promise(resolve => {
+    _confirmNoteDoneResolve = (result) => {
+      document.getElementById('confirmNoteDoneOverlay').classList.remove('open');
+      _confirmNoteDoneResolve = null;
+      resolve(result);
+    };
+    document.getElementById('confirmNoteDoneTitle').textContent = title;
+    document.getElementById('confirmNoteDoneOverlay').classList.add('open');
+  });
+}
+
+async function markNoteDone(noteId) {
+  if (_offline) { toast('Cannot update while offline'); return; }
+  const uid  = _activeUser?.id;
+  const nKey = 'usr_' + uid + '_' + SK.NOTES;
+  const notes = JSON.parse(JSON.stringify(_data[nKey] || []));
+  const note  = notes.find(n => String(n.id) === String(noteId));
+  if (!note) return;
+
+  const confirmed = await confirmNoteDone(note.title || 'Untitled');
+  if (!confirmed) return;
+
+  note.done      = true;
+  note.doneAt    = Date.now();
+
+  const ok = await writeKey(nKey, notes);
+  if (ok) {
+    // Animate the card out
+    const card = document.getElementById('nc-' + noteId);
+    if (card) {
+      card.style.transition = 'opacity 0.25s,transform 0.25s';
+      card.style.opacity    = '0';
+      card.style.transform  = 'translateX(40px)';
+      setTimeout(() => renderReminders(), 270);
+    } else {
+      renderReminders();
+    }
+    toast('✓ Note marked as done');
+  }
+}
+
 function setNoteFilter(btn, type) {
   _noteFilter = type;
   document.querySelectorAll('#noteTypeFilter .stage-pill').forEach(b => b.classList.remove('active'));
@@ -2256,7 +2323,7 @@ function renderReminders() {
     const overdue = n.due && n.due < td;
     const color   = typeColors[n.type] || 'var(--accent)';
     const body    = (n.body || '').replace(/<[^>]+>/g,' ').trim();
-    return `<div class="note-card nt-${n.type||'note'}">
+    return `<div class="note-card nt-${n.type||'note'}" id="nc-${n.id}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
         <div class="note-title">${esc(n.title || 'Untitled')}</div>
         <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill);background:${color}22;color:${color};white-space:nowrap;flex-shrink:0">${n.type||'note'}</span>
@@ -2266,6 +2333,12 @@ function renderReminders() {
         <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         ${overdue ? 'Overdue · ' : ''}${fmtDate(n.due)}
       </div>` : ''}
+      <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border-light)">
+        <button onclick="markNoteDone('${n.id}')" style="display:flex;align-items:center;gap:6px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-pill);padding:5px 14px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;transition:all 0.15s">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Mark Done
+        </button>
+      </div>
     </div>`;
   }).join('');
 }
