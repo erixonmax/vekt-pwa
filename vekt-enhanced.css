@@ -462,3 +462,225 @@ html, body { background: var(--white) !important; }
 [data-theme="dark"] .task-card:active { background: var(--border-light) !important; }
 [data-theme="dark"] html, [data-theme="dark"] body, [data-theme="dark"] #app, [data-theme="dark"] .scroll { background: var(--bg) !important; }
 [data-theme="dark"] .task-comment-chip { background: var(--border-light) !important; border-color: var(--border) !important; }
+
+/* ═══════════════════════════════════════════════════════
+   PHASE 2 — Remaining screens + scroll behaviours
+   ═══════════════════════════════════════════════════════ */
+
+/* ── 1. Projects — flat grouped rows ─────────────────── */
+#projList, #projList > * { background: var(--white) !important; }
+
+.proj-group {
+  background: var(--white) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  overflow: visible !important;
+}
+/* Single shared container look: top & bottom rounded on outermost wrap */
+#projList .proj-group:first-child .proj-card:first-child {
+  border-top: 0.5px solid var(--border-light) !important;
+}
+.proj-card {
+  background: var(--white) !important;
+  border: none !important;
+  border-bottom: 0.5px solid var(--border-light) !important;
+  padding: 15px 16px !important;
+  transition: background 0.1s !important;
+}
+.proj-card:active { background: var(--accent-light) !important; opacity: 1 !important; }
+[data-theme="dark"] .proj-card { background: var(--white) !important; border-bottom-color: var(--border-light) !important; }
+[data-theme="dark"] .proj-card:active { background: var(--border-light) !important; }
+
+.proj-name { font-size: 15px !important; font-weight: 600 !important; }
+.proj-meta { font-size: 12px !important; color: var(--muted2) !important; margin-top: 3px !important; }
+
+/* Project dot — slightly bigger */
+.proj-dot { width: 10px !important; height: 10px !important; flex-shrink: 0; }
+
+/* Project detail large title */
+#projDetailView > div:first-child {
+  padding: 10px 16px 6px !important;
+  border-bottom: 0.5px solid var(--border-light);
+}
+#detailProjName { font-size: 22px !important; font-weight: 800 !important; letter-spacing: -0.4px !important; margin-top: 4px !important; }
+#detailProjMeta { font-size: 12px !important; color: var(--muted2) !important; margin-top: 2px !important; }
+
+/* Stage filter — native segmented feel */
+.stage-filter { padding: 10px 16px 8px !important; background: var(--white) !important; }
+.stage-pill {
+  font-size: 12px !important;
+  padding: 6px 14px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--bg) !important;
+  box-shadow: none !important;
+}
+.stage-pill.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 2px 8px rgba(123,92,245,0.28) !important;
+}
+
+/* ── 2. Tracker — flat entry rows ────────────────────── */
+#trackerList { background: var(--white) !important; padding: 0 0 80px !important; }
+.entry-card {
+  background: var(--white) !important;
+  border: none !important;
+  border-left: 3px solid transparent !important;
+  border-bottom: 0.5px solid var(--border-light) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  padding: 14px 16px !important;
+}
+.entry-card.status-done-card          { border-left-color: var(--green) !important; }
+.entry-card.status-revised-card       { border-left-color: var(--orange) !important; }
+.entry-card.status-revision-done-card { border-left-color: var(--accent) !important; }
+[data-theme="dark"] .entry-card { background: var(--white) !important; border-bottom-color: var(--border-light) !important; }
+
+.entry-output { font-size: 15px !important; font-weight: 600 !important; }
+.entry-task   { font-size: 12px !important; }
+.entry-meta   { font-size: 11px !important; gap: 10px !important; margin-top: 7px !important; }
+
+/* Revision button — demote, don't push it up */
+.entry-card .task-btn.primary {
+  font-size: 11px !important;
+  padding: 5px 12px !important;
+  border-radius: var(--radius-pill) !important;
+}
+
+/* Child entries — indent slightly with background tint */
+.entry-child-wrap {
+  margin-top: 10px !important;
+  padding: 10px 0 0 !important;
+  border-top: 0.5px solid var(--border-light) !important;
+}
+.entry-child-wrap .entry-card {
+  background: var(--bg) !important;
+  border-radius: var(--radius-sm) !important;
+  border-bottom: none !important;
+  margin-bottom: 6px !important;
+  padding: 10px 12px !important;
+}
+
+/* ── 3. Reminders/Notes — flat rows, keep accent border ─ */
+#reminderList { background: var(--white) !important; padding: 0 0 80px !important; }
+.note-card {
+  background: var(--white) !important;
+  border: none !important;
+  border-left: 3px solid transparent !important;
+  border-bottom: 0.5px solid var(--border-light) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  padding: 14px 16px !important;
+}
+[data-theme="dark"] .note-card { background: var(--white) !important; border-bottom-color: var(--border-light) !important; }
+.note-title { font-size: 15px !important; font-weight: 600 !important; }
+.note-body  { font-size: 13px !important; line-height: 1.5 !important; margin-top: 3px !important; }
+/* Mark Done button in note — demote */
+.note-card > div:last-child button {
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  color: var(--muted) !important;
+  border-radius: var(--radius-pill) !important;
+  font-size: 12px !important;
+  padding: 5px 14px !important;
+  min-height: 30px !important;
+}
+
+/* ── 4. Search bar — iOS native style ────────────────── */
+.search-input {
+  background: var(--bg) !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 15px !important;
+  padding: 9px 10px 9px 36px !important;
+  border-radius: var(--radius-pill) !important;
+  color: var(--text) !important;
+}
+.search-input:focus {
+  border: none !important;
+  box-shadow: 0 0 0 2px var(--accent) !important;
+  outline: none !important;
+}
+.search-wrap { padding: 4px 0 !important; }
+[data-theme="dark"] .search-input { background: var(--border-light) !important; }
+
+/* ── 5. Scroll-collapse greeting ─────────────────────── */
+.today-greeting {
+  transition: font-size 0.2s ease, opacity 0.2s ease !important;
+}
+.today-greeting.collapsed {
+  font-size: 16px !important;
+  opacity: 0.6 !important;
+}
+
+/* ── 6. Pull-to-refresh indicator ────────────────────── */
+.ptr-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 0;
+  overflow: hidden;
+  transition: height 0.2s ease;
+  color: var(--muted2);
+  font-size: 12px;
+  font-weight: 600;
+  gap: 8px;
+}
+.ptr-indicator.pulling { height: 44px; }
+.ptr-indicator.refreshing { height: 44px; }
+.ptr-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+.ptr-indicator.refreshing .ptr-spinner { display: block; }
+.ptr-arrow {
+  width: 16px; height: 16px;
+  stroke: var(--muted2);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s ease;
+}
+.ptr-indicator.ready .ptr-arrow { transform: rotate(180deg); }
+
+/* ── 7. Portal cards — flat rows ────────────────────── */
+.portal-task {
+  background: var(--white) !important;
+  border: none !important;
+  border-bottom: 0.5px solid var(--border-light) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  padding: 14px 16px !important;
+}
+[data-theme="dark"] .portal-task { background: var(--white) !important; border-bottom-color: var(--border-light) !important; }
+
+/* ── 8. Back button — bigger tap target ──────────────── */
+.back-btn {
+  font-size: 15px !important;
+  min-height: 44px !important;
+  padding: 10px 0 !important;
+}
+
+/* ── 9. Scroll containers — match white bg ───────────── */
+.scroll-no-pad { background: var(--white) !important; }
+#projList, #trackerList, #reminderList, #portalList { background: var(--white) !important; }
+
+/* ── 10. Tab screens bg ──────────────────────────────── */
+#tabProjects, #tabTracker, #tabReminders, #tabPortal { background: var(--white) !important; }
+[data-theme="dark"] #tabProjects,
+[data-theme="dark"] #tabTracker,
+[data-theme="dark"] #tabReminders,
+[data-theme="dark"] #tabPortal { background: var(--bg) !important; }
+
+/* ── 11. Header border sync ──────────────────────────── */
+.header { border-bottom: 0.5px solid var(--border) !important; }
