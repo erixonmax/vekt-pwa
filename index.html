@@ -977,16 +977,9 @@ if ('serviceWorker' in navigator) {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  // Migrate old permanent 'vekt_installed' flag → timed snooze so
-  // users who uninstalled the PWA will see the banner again after 1 day
-  if (localStorage.getItem('vekt_installed')) {
-    localStorage.removeItem('vekt_installed');
-    // Only set a snooze if not already running standalone (already installed)
-    if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
-      const expiry = Date.now() + 1 * 24 * 60 * 60 * 1000; // 1 day grace
-      localStorage.setItem('vekt_install_snooze', String(expiry));
-    }
-  }
+  // Clean up any old install flags from previous versions
+  localStorage.removeItem('vekt_installed');
+  localStorage.removeItem('vekt_install_snooze');
   hideLoading();
   // Sync theme toggle UI on load
   try {
@@ -2571,46 +2564,19 @@ if (window.visualViewport) {
 // ── PWA Install ───────────────────────────────────────────────────────────────
 let _installPrompt = null;
 
-// Capture the prompt as early as possible — before login
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   _installPrompt = e;
 });
 
-// When the user installs via native prompt, snooze for 30 days
-// (not permanent — if they uninstall, the banner can return)
 window.addEventListener('appinstalled', () => {
   _installPrompt = null;
-  _snoozeInstallBanner(30);
   _hideBanner();
 });
 
 function _isRunningStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches
       || window.navigator.standalone === true;
-}
-
-// Snooze: store an expiry timestamp. Days = 0 means session-only (no localStorage).
-function _snoozeInstallBanner(days) {
-  if (days === 0) {
-    sessionStorage.setItem('vekt_install_snooze', '1');
-    return;
-  }
-  const expiry = Date.now() + days * 24 * 60 * 60 * 1000;
-  localStorage.setItem('vekt_install_snooze', String(expiry));
-}
-
-function _isSnoozed() {
-  // Session snooze
-  if (sessionStorage.getItem('vekt_install_snooze')) return true;
-  // Persistent snooze with expiry
-  const expiry = localStorage.getItem('vekt_install_snooze');
-  if (expiry) {
-    if (Date.now() < Number(expiry)) return true;
-    // Expired — clear it so banner can resurface
-    localStorage.removeItem('vekt_install_snooze');
-  }
-  return false;
 }
 
 function _hideBanner() {
@@ -2625,14 +2591,16 @@ function installApp() {
   if (_installPrompt) {
     _installPrompt.prompt();
     _installPrompt.userChoice.then(choice => {
-      if (choice.outcome === 'accepted') {
-        _snoozeInstallBanner(30);
-      }
       _installPrompt = null;
     });
   } else {
     showInstallSheet();
   }
+}
+
+function neverShowInstall() {
+  localStorage.setItem('vekt_install_never', '1');
+  _hideBanner();
 }
 
 function showInstallSheet() {
@@ -2645,9 +2613,6 @@ function showInstallSheet() {
 function closeInstallSheet() {
   const sheet = document.getElementById('installSheet');
   if (sheet) { sheet.style.display = 'none'; }
-  // Done on the sheet = snooze 3 days (they saw the instructions)
-  _snoozeInstallBanner(3);
-  _hideBanner();
 }
 
 function switchSheetTab(tab) {
@@ -2661,20 +2626,12 @@ function switchSheetTab(tab) {
   document.getElementById('sheetTabAndroid').style.border     = tab === 'android' ? 'none' : '1.5px solid #d2d2d7';
 }
 
-// ✕ button — snooze for session only (low friction dismiss)
-function dismissInstall() {
-  _snoozeInstallBanner(0);
-  _hideBanner();
-}
-
 // Show install banner after login
 function _maybeShowInstallBanner() {
-  // Never show if running as installed PWA right now
+  // Never show if already running as installed PWA
   if (_isRunningStandalone()) return;
-  // Never show if snoozed (session or timed)
-  if (_isSnoozed()) return;
-  // Only show on touch devices
-  if (!('ontouchstart' in window) && navigator.maxTouchPoints < 1) return;
+  // Never show if user explicitly dismissed forever
+  if (localStorage.getItem('vekt_install_never')) return;
   const banner = document.getElementById('installBanner');
   if (!banner) return;
   banner.style.display = 'flex';
@@ -2770,28 +2727,31 @@ if (window.visualViewport) {
   background:var(--accent);
   color:#fff;
   padding:14px 16px calc(14px + env(safe-area-inset-bottom));
-  align-items:center;
-  gap:12px;
+  flex-direction:column;
+  gap:10px;
   box-shadow:0 -4px 24px rgba(0,0,0,0.18);
   transform:translateY(100%);
   transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
 ">
-  <div style="font-size:1.6rem;flex-shrink:0">📲</div>
-  <div style="flex:1">
-    <div style="font-size:15px;font-weight:700;line-height:1.2">Add vekt to your home screen</div>
-    <div style="font-size:12px;opacity:0.85;margin-top:2px">Works like a real app — no browser chrome</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="font-size:1.6rem;flex-shrink:0">📲</div>
+    <div style="flex:1">
+      <div style="font-size:15px;font-weight:700;line-height:1.2">Add vekt to your home screen</div>
+      <div style="font-size:12px;opacity:0.85;margin-top:2px">Works like a real app — no browser chrome</div>
+    </div>
+    <button onclick="installApp()" style="
+      background:#fff;color:var(--accent);border:none;
+      padding:8px 16px;border-radius:20px;
+      font-size:13px;font-weight:700;cursor:pointer;
+      white-space:nowrap;flex-shrink:0;font-family:inherit
+    ">Install</button>
   </div>
-  <button onclick="installApp()" style="
-    background:#fff;color:var(--accent);border:none;
-    padding:8px 16px;border-radius:20px;
-    font-size:13px;font-weight:700;cursor:pointer;
-    white-space:nowrap;flex-shrink:0;font-family:inherit
-  ">Install</button>
-  <button onclick="dismissInstall()" style="
+  <button onclick="neverShowInstall()" style="
     background:none;border:none;color:#fff;
-    font-size:1.3rem;cursor:pointer;padding:0;flex-shrink:0;
-    opacity:0.8;line-height:1
-  ">✕</button>
+    font-size:12px;cursor:pointer;padding:0;
+    opacity:0.7;text-decoration:underline;
+    text-align:left;font-family:inherit
+  ">Don't show this again</button>
 </div>
 
 <!-- ════════ INSTALL INSTRUCTIONS SHEET ════════ -->
