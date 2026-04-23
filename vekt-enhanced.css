@@ -440,20 +440,16 @@ html, body { background: var(--white) !important; }
   margin: 24px 0 8px !important;
 }
 
-/* ── 8. Install banner → bottom-sheet style ──────────── */
+/* ── 8. Install banner — restyle in-flow (not fixed) ─── */
 #installBanner {
-  position: fixed !important;
-  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 12px) !important;
-  left: 16px !important;
-  right: 16px !important;
-  top: auto !important;
-  border-radius: var(--radius-lg) !important;
-  box-shadow: 0 8px 32px rgba(123,92,245,0.35) !important;
-  z-index: 500 !important;
-  flex-shrink: 0 !important;
-  padding: 14px 16px !important;
+  border-radius: 0 !important;
   background: var(--accent) !important;
+  padding: 12px 16px !important;
+  gap: 10px !important;
 }
+
+/* ── 8b. Card click suppression after long-press ─────── */
+.task-card.long-press-active { pointer-events: none; }
 
 /* ── 9. Done card — subtle, not heavy opacity ─────────── */
 .task-card.done-card { opacity: 0.38 !important; }

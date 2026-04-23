@@ -1520,7 +1520,7 @@ function renderTaskCard(t, badgeClass) {
       <span class="swipe-label">Done</span>
       <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
-    <div class="task-card ${t.done ? 'done-card' : ''}" id="tc-${t.id}" onclick="openTaskDetail('${t.id}')">
+    <div class="task-card ${t.done ? 'done-card' : ''}" id="tc-${t.id}" onclick="if(!_longPressJustFired())openTaskDetail('${t.id}')">
       <div class="task-check ${t.done ? 'checked' : ''}" onclick="event.stopPropagation();toggleDone('${t.id}')">
         <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
@@ -1587,6 +1587,11 @@ function toggleTheme() {
 const _swipe = {};
 const SWIPE_THRESHOLD = 80;
 const LONG_PRESS_MS   = 500;
+let _longPressFired = false;
+function _longPressJustFired() {
+  if (_longPressFired) { _longPressFired = false; return true; }
+  return false;
+}
 
 function swipeStart(e, taskId) {
   const touch = e.touches[0];
@@ -1600,6 +1605,7 @@ function swipeStart(e, taskId) {
 function _triggerLongPress(taskId) {
   const s = _swipe[taskId];
   if (!s || Math.abs(s.dx) > 12) return;
+  _longPressFired = true;
   haptic([20, 40, 20]);
   const card = document.getElementById('tc-' + taskId);
   if (card) card.classList.add('press-hold');
