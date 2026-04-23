@@ -2626,21 +2626,65 @@ function switchSheetTab(tab) {
   document.getElementById('sheetTabAndroid').style.border     = tab === 'android' ? 'none' : '1.5px solid #d2d2d7';
 }
 
+function _isInAppBrowser() {
+  const ua = navigator.userAgent || '';
+  return /FBAN|FBAV|FB_IAB|Instagram|Messenger|MessengerLiteForiOS|musical_ly|TikTok|Twitter|Line\/|KAKAOTALK|MicroMessenger|GSA\//.test(ua);
+}
+
+function _showBanner(el) {
+  el.style.display = 'flex';
+  el.removeAttribute('aria-hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.transform = 'translateY(0)';
+  }));
+}
+
+function openInBrowser() {
+  const url = location.href;
+  // Android intent: try to hand off to Chrome
+  const intent = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+  try { location.href = intent; } catch(e) {}
+  // Fallback: copy URL and tell user
+  setTimeout(() => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Link copied! Paste it in Chrome or Safari to install vekt.');
+      }).catch(() => {
+        alert('Open this link in Chrome or Safari to install vekt:\n' + url);
+      });
+    } else {
+      alert('Open this link in Chrome or Safari to install vekt:\n' + url);
+    }
+  }, 500);
+}
+
+function dismissInAppBanner() {
+  sessionStorage.setItem('vekt_inapp_dismissed', '1');
+  const b = document.getElementById('inAppBanner');
+  if (!b) return;
+  b.style.transform = 'translateY(100%)';
+  b.setAttribute('aria-hidden', 'true');
+  setTimeout(() => { b.style.display = 'none'; }, 380);
+}
+
 // Show install banner after login
 function _maybeShowInstallBanner() {
   // Never show if already running as installed PWA
   if (_isRunningStandalone()) return;
+
+  // In-app browser (Messenger, Instagram, etc.) — can't install from here
+  if (_isInAppBrowser()) {
+    if (sessionStorage.getItem('vekt_inapp_dismissed')) return;
+    const b = document.getElementById('inAppBanner');
+    if (b) _showBanner(b);
+    return;
+  }
+
   // Never show if user explicitly dismissed forever
   if (localStorage.getItem('vekt_install_never')) return;
   const banner = document.getElementById('installBanner');
   if (!banner) return;
-  banner.style.display = 'flex';
-  banner.removeAttribute('aria-hidden');
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      banner.style.transform = 'translateY(0)';
-    });
-  });
+  _showBanner(banner);
 }
 
 // ── Force project navigation fix ────────────────────────────────────────────
@@ -2719,6 +2763,42 @@ if (window.visualViewport) {
 
 
 <!-- ════════ INSTALL BANNER (fixed, outside #app) ════════ -->
+<!-- ════════ IN-APP BROWSER BANNER ════════ -->
+<div id="inAppBanner" aria-hidden="true" style="
+  display:none;
+  position:fixed;
+  bottom:0; left:0; right:0;
+  z-index:1900;
+  background:#1d1d1f;
+  color:#fff;
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+  flex-direction:column;
+  gap:10px;
+  box-shadow:0 -4px 24px rgba(0,0,0,0.3);
+  transform:translateY(100%);
+  transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="font-size:1.5rem;flex-shrink:0">🌐</div>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:700;line-height:1.3">Open in Chrome to install</div>
+      <div style="font-size:12px;opacity:0.7;margin-top:2px">vekt can't be installed from this browser</div>
+    </div>
+    <button onclick="openInBrowser()" style="
+      background:var(--accent);color:#fff;border:none;
+      padding:8px 14px;border-radius:20px;
+      font-size:13px;font-weight:700;cursor:pointer;
+      white-space:nowrap;flex-shrink:0;font-family:inherit
+    ">Open in Chrome</button>
+  </div>
+  <button onclick="dismissInAppBanner()" style="
+    background:none;border:none;color:#fff;
+    font-size:12px;cursor:pointer;padding:0;
+    opacity:0.5;text-decoration:underline;
+    text-align:left;font-family:inherit
+  ">Dismiss</button>
+</div>
+
 <div id="installBanner" aria-hidden="true" style="
   display:none;
   position:fixed;
