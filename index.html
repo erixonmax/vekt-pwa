@@ -977,6 +977,16 @@ if ('serviceWorker' in navigator) {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  // Migrate old permanent 'vekt_installed' flag → timed snooze so
+  // users who uninstalled the PWA will see the banner again after 1 day
+  if (localStorage.getItem('vekt_installed')) {
+    localStorage.removeItem('vekt_installed');
+    // Only set a snooze if not already running standalone (already installed)
+    if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
+      const expiry = Date.now() + 1 * 24 * 60 * 60 * 1000; // 1 day grace
+      localStorage.setItem('vekt_install_snooze', String(expiry));
+    }
+  }
   hideLoading();
   // Sync theme toggle UI on load
   try {
@@ -2567,32 +2577,60 @@ window.addEventListener('beforeinstallprompt', (e) => {
   _installPrompt = e;
 });
 
-// When the user actually installs, mark permanently so banner never reappears
+// When the user installs via native prompt, snooze for 30 days
+// (not permanent — if they uninstall, the banner can return)
 window.addEventListener('appinstalled', () => {
   _installPrompt = null;
-  localStorage.setItem('vekt_installed', '1');
-  const banner = document.getElementById('installBanner');
-  if (banner) { banner.style.transform = 'translateY(100%)'; setTimeout(() => { banner.style.display = 'none'; }, 380); }
+  _snoozeInstallBanner(30);
+  _hideBanner();
 });
 
 function _isRunningStandalone() {
-  // Covers Android Chrome + iOS Safari installed PWA
   return window.matchMedia('(display-mode: standalone)').matches
       || window.navigator.standalone === true;
 }
 
+// Snooze: store an expiry timestamp. Days = 0 means session-only (no localStorage).
+function _snoozeInstallBanner(days) {
+  if (days === 0) {
+    sessionStorage.setItem('vekt_install_snooze', '1');
+    return;
+  }
+  const expiry = Date.now() + days * 24 * 60 * 60 * 1000;
+  localStorage.setItem('vekt_install_snooze', String(expiry));
+}
+
+function _isSnoozed() {
+  // Session snooze
+  if (sessionStorage.getItem('vekt_install_snooze')) return true;
+  // Persistent snooze with expiry
+  const expiry = localStorage.getItem('vekt_install_snooze');
+  if (expiry) {
+    if (Date.now() < Number(expiry)) return true;
+    // Expired — clear it so banner can resurface
+    localStorage.removeItem('vekt_install_snooze');
+  }
+  return false;
+}
+
+function _hideBanner() {
+  const banner = document.getElementById('installBanner');
+  if (!banner) return;
+  banner.style.transform = 'translateY(100%)';
+  banner.setAttribute('aria-hidden', 'true');
+  setTimeout(() => { banner.style.display = 'none'; }, 380);
+}
+
 function installApp() {
   if (_installPrompt) {
-    // Android Chrome — native prompt
     _installPrompt.prompt();
     _installPrompt.userChoice.then(choice => {
       if (choice.outcome === 'accepted') {
-        localStorage.setItem('vekt_installed', '1');
+        _snoozeInstallBanner(30);
       }
       _installPrompt = null;
     });
   } else {
-    // iOS / other — show manual instructions sheet
     showInstallSheet();
   }
 }
@@ -2600,7 +2638,6 @@ function installApp() {
 function showInstallSheet() {
   const sheet = document.getElementById('installSheet');
   if (sheet) { sheet.style.display = 'flex'; }
-  // Auto-select the right tab for the user's platform
   const isAndroid = /android/i.test(navigator.userAgent);
   switchSheetTab(isAndroid ? 'android' : 'ios');
 }
@@ -2608,10 +2645,9 @@ function showInstallSheet() {
 function closeInstallSheet() {
   const sheet = document.getElementById('installSheet');
   if (sheet) { sheet.style.display = 'none'; }
-  // Closing the sheet snoozes the banner for this session
-  sessionStorage.setItem('vekt_install_snoozed', '1');
-  const banner = document.getElementById('installBanner');
-  if (banner) { banner.style.transform = 'translateY(100%)'; banner.setAttribute('aria-hidden', 'true'); setTimeout(() => { banner.style.display = 'none'; }, 380); }
+  // Done on the sheet = snooze 3 days (they saw the instructions)
+  _snoozeInstallBanner(3);
+  _hideBanner();
 }
 
 function switchSheetTab(tab) {
@@ -2625,31 +2661,24 @@ function switchSheetTab(tab) {
   document.getElementById('sheetTabAndroid').style.border     = tab === 'android' ? 'none' : '1.5px solid #d2d2d7';
 }
 
-// ✕ button on the banner — snoozes for this session only
+// ✕ button — snooze for session only (low friction dismiss)
 function dismissInstall() {
-  sessionStorage.setItem('vekt_install_snoozed', '1');
-  const banner = document.getElementById('installBanner');
-  if (!banner) return;
-  banner.style.transform = 'translateY(100%)';
-  banner.setAttribute('aria-hidden', 'true');
-  setTimeout(() => { banner.style.display = 'none'; }, 380);
+  _snoozeInstallBanner(0);
+  _hideBanner();
 }
 
 // Show install banner after login
 function _maybeShowInstallBanner() {
-  // Never show if already installed as PWA
+  // Never show if running as installed PWA right now
   if (_isRunningStandalone()) return;
-  // Never show if user has already installed (persisted across sessions)
-  if (localStorage.getItem('vekt_installed')) return;
-  // Don't nag again within the same browser session
-  if (sessionStorage.getItem('vekt_install_snoozed')) return;
-  // Only show on touch devices (covers mobile browsers + emulators)
+  // Never show if snoozed (session or timed)
+  if (_isSnoozed()) return;
+  // Only show on touch devices
   if (!('ontouchstart' in window) && navigator.maxTouchPoints < 1) return;
   const banner = document.getElementById('installBanner');
   if (!banner) return;
   banner.style.display = 'flex';
   banner.removeAttribute('aria-hidden');
-  // Slight delay so display:flex is painted before transform transition fires
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       banner.style.transform = 'translateY(0)';
