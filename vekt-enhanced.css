@@ -684,3 +684,36 @@ html, body { background: var(--white) !important; }
 
 /* ── 11. Header border sync ──────────────────────────── */
 .header { border-bottom: 0.5px solid var(--border) !important; }
+
+/* ═══════════════════════════════════════════════════════
+   PHASE 2 FIXES — animations, delete sheet, modal close
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Modal sheet enhanced spring ────────────────────── */
+.modal-sheet {
+  transition: transform 0.34s cubic-bezier(0.32,0.72,0,1) !important;
+}
+.modal-overlay.open .modal-sheet {
+  transform: translateY(0) !important;
+}
+
+/* ── Delete action sheet dark mode ───────────────────── */
+[data-theme="dark"] #deleteSheetInner {
+  background: var(--white) !important;
+}
+[data-theme="dark"] #deleteSheetLabel {
+  color: var(--muted) !important;
+}
+
+/* ── Active press feedback on delete sheet buttons ───── */
+#deleteSheetConfirm:active { opacity: 0.82 !important; transform: scale(0.98) !important; }
+#deleteSheet button:last-child:active { opacity: 0.7 !important; }
+
+/* ── Avatar active ring ──────────────────────────────── */
+#headerAvatar {
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s ease !important;
+}
+#headerAvatar:active {
+  transform: scale(0.88) !important;
+  box-shadow: 0 0 0 3px var(--accent-light) !important;
+}

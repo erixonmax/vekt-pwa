@@ -326,8 +326,8 @@ input,textarea,select{font-family:inherit}
 .comment-send svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 
 /* ── Bottom sheet modals ─────────────────────────────────────────── */
-.modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0);display:none;align-items:flex-end;transition:background 0.25s ease}
-.modal-overlay.open{display:flex;background:rgba(0,0,0,0.4)}
+.modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0);display:flex;align-items:flex-end;visibility:hidden;pointer-events:none;transition:background 0.25s ease,visibility 0s linear 0.32s}
+.modal-overlay.open{visibility:visible;pointer-events:auto;background:rgba(0,0,0,0.4);transition:background 0.25s ease,visibility 0s linear 0s}
 .modal-sheet{
   background:var(--white);border-radius:22px 22px 0 0;
   width:100%;padding:8px 20px calc(24px + var(--safe-bot));
@@ -463,6 +463,18 @@ input,textarea,select{font-family:inherit}
 
 <!-- Toast -->
 <div id="toastEl"></div>
+
+<!-- Delete action sheet -->
+<div id="deleteSheet" style="position:fixed;inset:0;z-index:9997;display:flex;align-items:flex-end;background:rgba(0,0,0,0);pointer-events:none;visibility:hidden;transition:background 0.22s ease,visibility 0s linear 0.3s">
+  <div id="deleteSheetInner" style="width:100%;background:var(--white);border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);will-change:transform">
+    <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px"></div>
+    <div id="deleteSheetLabel" style="font-size:14px;font-weight:500;color:var(--muted);margin-bottom:14px;text-align:center"></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button id="deleteSheetConfirm" style="width:100%;padding:15px;border-radius:var(--radius-sm);border:none;background:var(--red-fill);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.12s">Delete</button>
+      <button onclick="dismissDeleteSheet()" style="width:100%;padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <!-- Task Done Confirm Sheet -->
 <div class="modal-overlay" id="confirmNoteDoneOverlay" onclick="if(event.target===this)_confirmNoteDoneResolve(false)">
@@ -1681,35 +1693,47 @@ function _triggerLongPress(taskId) {
 
 function _showDeleteToast(taskId, taskName) {
   const card = document.getElementById('tc-' + taskId);
-  if (card) setTimeout(() => card.classList.remove('press-hold'), 300);
-  const el = document.getElementById('toastEl');
-  clearTimeout(window._toastTimer);
-  const short = taskName.length > 22 ? taskName.slice(0,22)+'…' : taskName;
-  el.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:10px;width:100%">
-      <div style="font-size:13px;font-weight:500;opacity:0.9">Delete <b style="font-weight:700">"${short}"</b>?</div>
-      <div style="display:flex;gap:8px">
-        <button onclick="confirmDeleteTask('${taskId}')" style="flex:1;background:var(--red-fill);color:#fff;border:none;padding:10px 0;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Delete</button>
-        <button onclick="dismissDeleteToast()" style="flex:1;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:inherit;padding:10px 0;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
-      </div>
-    </div>`;
-  el.style.cssText += ';white-space:normal;width:calc(100% - 32px);left:16px;transform:translateX(0);bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 14px);border-radius:12px;padding:14px';
-  el.classList.add('show');
-  window._toastTimer = setTimeout(dismissDeleteToast, 5000);
+  if (card) setTimeout(() => card.classList.remove('press-hold'), 200);
+
+  const sheet = document.getElementById('deleteSheet');
+  const inner = document.getElementById('deleteSheetInner');
+  const label = document.getElementById('deleteSheetLabel');
+  const confirmBtn = document.getElementById('deleteSheetConfirm');
+
+  const short = taskName.length > 30 ? taskName.slice(0, 30) + '…' : taskName;
+  label.textContent = `Delete "${short}"?`;
+  confirmBtn.onclick = () => confirmDeleteTask(taskId);
+
+  // Clear any existing auto-dismiss
+  clearTimeout(window._deleteSheetTimer);
+
+  // Open
+  sheet.style.visibility = 'visible';
+  sheet.style.pointerEvents = 'auto';
+  sheet.style.transition = 'background 0.22s ease, visibility 0s linear 0s';
+  sheet.style.background = 'rgba(0,0,0,0.4)';
+  requestAnimationFrame(() => { inner.style.transform = 'translateY(0)'; });
+
+  // Backdrop tap cancels
+  sheet.onclick = (e) => { if (e.target === sheet) dismissDeleteSheet(); };
+
+  // Auto-dismiss after 6s
+  window._deleteSheetTimer = setTimeout(dismissDeleteSheet, 6000);
 }
 
-function dismissDeleteToast() {
-  const el = document.getElementById('toastEl');
-  el.classList.remove('show');
-  // Reset inline overrides
-  el.style.width = '';
-  el.style.left = '';
-  el.style.transform = '';
-  el.style.bottom = '';
-  el.style.borderRadius = '';
-  el.style.padding = '';
-  el.style.whiteSpace = '';
+function dismissDeleteSheet() {
+  clearTimeout(window._deleteSheetTimer);
+  const sheet = document.getElementById('deleteSheet');
+  const inner = document.getElementById('deleteSheetInner');
+  inner.style.transform = 'translateY(100%)';
+  sheet.style.background = 'rgba(0,0,0,0)';
+  sheet.style.transition = 'background 0.22s ease, visibility 0s linear 0.3s';
+  sheet.style.visibility = 'hidden';
+  sheet.style.pointerEvents = 'none';
 }
+
+// Keep old name as alias for any remaining callers
+function dismissDeleteToast() { dismissDeleteSheet(); }
 
 async function confirmDeleteTask(taskId) {
   dismissDeleteToast();
@@ -2676,8 +2700,8 @@ function _maybeShowInstallBanner() {
   if (localStorage.getItem('vekt_installed')) return;
   // Don't nag again within the same browser session
   if (sessionStorage.getItem('vekt_install_snoozed')) return;
-  // Only show on mobile devices
-  if (!/android|iphone|ipad|ipod/i.test(navigator.userAgent)) return;
+  // Only show on touch devices (covers mobile browsers + emulators)
+  if (!('ontouchstart' in window) && navigator.maxTouchPoints < 1) return;
   const banner = document.getElementById('installBanner');
   if (banner) banner.style.display = 'flex';
 }
