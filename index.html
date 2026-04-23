@@ -2540,20 +2540,38 @@ if (window.visualViewport) {
 // ── PWA Install ───────────────────────────────────────────────────────────────
 let _installPrompt = null;
 
+// Capture the prompt as early as possible — before login
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   _installPrompt = e;
 });
 
-window.addEventListener('appinstalled', () => { _installPrompt = null; });
+// When the user actually installs, mark permanently so banner never reappears
+window.addEventListener('appinstalled', () => {
+  _installPrompt = null;
+  localStorage.setItem('vekt_installed', '1');
+  const banner = document.getElementById('installBanner');
+  if (banner) banner.style.display = 'none';
+});
+
+function _isRunningStandalone() {
+  // Covers Android Chrome + iOS Safari installed PWA
+  return window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+}
 
 function installApp() {
   if (_installPrompt) {
-    // Android Chrome native prompt available
+    // Android Chrome — native prompt
     _installPrompt.prompt();
-    _installPrompt.userChoice.then(() => { _installPrompt = null; });
+    _installPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        localStorage.setItem('vekt_installed', '1');
+      }
+      _installPrompt = null;
+    });
   } else {
-    // Show manual instructions sheet
+    // iOS / other — show manual instructions sheet
     showInstallSheet();
   }
 }
@@ -2561,12 +2579,16 @@ function installApp() {
 function showInstallSheet() {
   const sheet = document.getElementById('installSheet');
   if (sheet) { sheet.style.display = 'flex'; }
+  // Auto-select the right tab for the user's platform
+  const isAndroid = /android/i.test(navigator.userAgent);
+  switchSheetTab(isAndroid ? 'android' : 'ios');
 }
 
 function closeInstallSheet() {
   const sheet = document.getElementById('installSheet');
   if (sheet) { sheet.style.display = 'none'; }
-  localStorage.setItem('vekt_install_dismissed', '1');
+  // Closing the sheet only snoozes the banner for this session, not forever
+  sessionStorage.setItem('vekt_install_snoozed', '1');
   const banner = document.getElementById('installBanner');
   if (banner) banner.style.display = 'none';
 }
@@ -2580,22 +2602,25 @@ function switchSheetTab(tab) {
   document.getElementById('sheetTabAndroid').style.background = tab === 'android' ? 'var(--accent)' : '#f5f5f7';
   document.getElementById('sheetTabAndroid').style.color      = tab === 'android' ? '#fff' : '#1d1d1f';
   document.getElementById('sheetTabAndroid').style.border     = tab === 'android' ? 'none' : '1.5px solid #d2d2d7';
-  // Auto-detect platform
-  const isAndroid = /android/i.test(navigator.userAgent);
-  if (tab === 'auto') switchSheetTab(isAndroid ? 'android' : 'ios');
 }
 
+// ✕ button on the banner — snoozes for this session only
 function dismissInstall() {
-  localStorage.setItem('vekt_install_dismissed', '1');
+  sessionStorage.setItem('vekt_install_snoozed', '1');
   const banner = document.getElementById('installBanner');
   if (banner) banner.style.display = 'none';
 }
 
-// Show install banner after login (not on first load)
+// Show install banner after login
 function _maybeShowInstallBanner() {
-  if (localStorage.getItem('vekt_install_dismissed')) return;
-  // Only show if not already installed as PWA
-  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  // Never show if already installed as PWA
+  if (_isRunningStandalone()) return;
+  // Never show if user has already installed (persisted across sessions)
+  if (localStorage.getItem('vekt_installed')) return;
+  // Don't nag again within the same browser session
+  if (sessionStorage.getItem('vekt_install_snoozed')) return;
+  // Only show on mobile devices
+  if (!/android|iphone|ipad|ipod/i.test(navigator.userAgent)) return;
   const banner = document.getElementById('installBanner');
   if (banner) banner.style.display = 'flex';
 }
